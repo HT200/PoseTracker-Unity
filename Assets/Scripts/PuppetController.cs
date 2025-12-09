@@ -43,6 +43,16 @@ public class PuppetController : MonoBehaviour
 
     private Dictionary<string, Vector2> cache = new();
 
+    public bool HasCurrentPose()
+    {
+        return hasValidPose && cachedSimplePose != null;
+    }
+
+    public SimplePoseData GetCurrentPose()
+    {
+        return cachedSimplePose;
+    }
+
     Vector2 Smooth(string key, Vector2 newVal)
     {
         if (!cache.ContainsKey(key)) cache[key] = newVal;
