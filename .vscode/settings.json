@@ -1,0 +1,4 @@
+{
+    "dotnet.preferCSharpExtension": true,
+    "omnisharp.dotnetPath": "C:\\Program Files\\dotnet\\dotnet.exe"
+}
