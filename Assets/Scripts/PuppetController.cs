@@ -1,6 +1,5 @@
-using UnityEngine;
-using UnityEngine.U2D.IK;
 using System.Collections.Generic;
+using UnityEngine;
 
 public class PuppetController : MonoBehaviour
 {
@@ -8,170 +7,163 @@ public class PuppetController : MonoBehaviour
     public PoseReceiver poseReceiver;
     public int personIndex = 0;
 
-    [Header("Puppet Root")]
-    public Transform puppetRoot;
-
-    [Header("Body")]
-    public Transform Head;
-    public Transform Upper_body;
+    [Header("Bones")]
     public Transform Lower_body;
+    public Transform Upper_body;
+    public Transform Head;
 
-    [Header("IK Targets - Arms")]
-    public Transform LeftHandTarget;
-    public Transform RightHandTarget;
+    public Transform Left_shoulder;
+    public Transform Left_arm;
+    public Transform Left_hand;
 
-    [Header("IK Targets - Legs")]
-    public Transform LeftFootTarget;
-    public Transform RightFootTarget;
+    public Transform Right_shoulder;
+    public Transform Right_arm;
+    public Transform Right_hand;
 
-    [Header("IK Solvers")]
-    public LimbSolver2D LeftArmSolver;
-    public LimbSolver2D RightArmSolver;
-    public LimbSolver2D LeftLegSolver;
-    public LimbSolver2D RightLegSolver;
+    public Transform Left_thigh;
+    public Transform Left_leg;
+    public Transform Left_foot;
 
-    [Header("Settings")]
-    public float smoothing = 0.35f;
-    public bool autoCalibrate = true;
-    public bool calibrated = false;
+    public Transform Right_thigh;
+    public Transform Right_leg;
+    public Transform Right_foot;
 
-    // CALIBRATION RESULTS
-    private float torsoScale = 1f;
-    private float upperArmScale, lowerArmScale;
-    private float upperLegScale, lowerLegScale;
-    private Vector2 puppetHipLocal;
+    [Header("Bone Angle Offsets (set once per character)")]
+    public float torsoOffset = 90f;
+    public float headOffset = -90f;
 
-    private Dictionary<string, Vector2> cache = new();
+    public float leftShoulderOffset = 130f;
+    public float leftArmOffset = 180f;
 
-    public bool HasCurrentPose()
+    public float rightShoulderOffset = -130f;
+    public float rightArmOffset = 180f;
+
+    public float leftThighOffset = 180f;
+    public float leftLegOffset = 0f;
+
+    public float rightThighOffset = 180f;
+    public float rightLegOffset = 0f;
+
+    [Header("Intensity")]
+    [Range(0,1)] public float torsoIntensity = 0.7f;
+    [Range(0,1)] public float headIntensity = 0.8f;
+    [Range(0,1)] public float armIntensity = 1.0f;
+    [Range(0,1)] public float legIntensity = 1.0f;
+
+    [Header("Motion Smoothing")]
+    [Range(0,1)] public float smoothing = 0.25f;
+
+    private bool calibrated = false;
+
+    // Neutral (user)
+    private float nTorso, nHead;
+    private float nLUArm, nLLArm;
+    private float nRUArm, nRLArm;
+    private float nLThigh, nLLeg;
+    private float nRThigh, nRLeg;
+
+    private Dictionary<string, float> smoothMap = new();
+
+    float Smooth(string key, float target)
     {
-        return hasValidPose && cachedSimplePose != null;
+        if (!smoothMap.ContainsKey(key))
+            smoothMap[key] = target;
+
+        float s = Mathf.LerpAngle(smoothMap[key], target, 1f - smoothing);
+        smoothMap[key] = s;
+        return s;
     }
 
-    public SimplePoseData GetCurrentPose()
+    float Angle(Vector2 a, Vector2 b)
     {
-        return cachedSimplePose;
-    }
-
-    Vector2 Smooth(string key, Vector2 newVal)
-    {
-        if (!cache.ContainsKey(key)) cache[key] = newVal;
-        cache[key] = Vector2.Lerp(cache[key], newVal, smoothing);
-        return cache[key];
-    }
-
-    float Distance(Vector2 a, Vector2 b) => (a - b).magnitude;
-    float Angle(Vector2 a, Vector2 b) => Mathf.Atan2((b - a).y, (b - a).x) * Mathf.Rad2Deg;
-
-    void Start()
-    {
-        puppetHipLocal = Lower_body.localPosition;
-        torsoScale = 1f;
+        Vector2 d = (b - a).normalized;
+        return Mathf.Atan2(d.y, d.x) * Mathf.Rad2Deg;
     }
 
     void LateUpdate()
     {
-        if (!poseReceiver || !poseReceiver.HasCurrentPose()) return;
+        if (!poseReceiver) return;
 
-        var pose = poseReceiver.GetCurrentPose();
+        // Use personIndex to get specific person's pose
+        PoseReceiver.SimplePoseData pose = poseReceiver.GetPoseForPerson(personIndex);
         if (pose == null || pose.landmarks == null) return;
 
-        // Build raw 0–1 mocap dictionary
-        Dictionary<string, Vector2> raw = new();
-        foreach (var lm in pose.landmarks)
-            raw[lm.name] = new Vector2(lm.position.x, lm.position.y);
+        var lm = new Dictionary<string, Vector2>();
+        foreach (var p in pose.landmarks)
+            lm[p.name] = new Vector2(p.position.x, p.position.y);
 
-        if (!raw.ContainsKey("left_hip") || !raw.ContainsKey("right_hip")) return;
+        if (!lm.ContainsKey("left_shoulder")) return;
 
-        Vector2 hipC = (raw["left_hip"] + raw["right_hip"]) * 0.5f;
-        Vector2 shC  = (raw["left_shoulder"] + raw["right_shoulder"]) * 0.5f;
+        Vector2 hipC = (lm["left_hip"] + lm["right_hip"]) * 0.5f;
+        Vector2 shC  = (lm["left_shoulder"] + lm["right_shoulder"]) * 0.5f;
 
-        // ==============================
-        // AUTO CALIBRATION (one time)
-        // ==============================
-        if (autoCalibrate && !calibrated)
+        float torsoA = Angle(hipC, shC);
+        float headA  = lm.ContainsKey("nose") ? Angle(shC, lm["nose"]) : torsoA;
+
+        float lUp = Angle(lm["left_shoulder"], lm["left_elbow"]);
+        float lLo = Angle(lm["left_elbow"], lm["left_wrist"]);
+
+        float rUp = Angle(lm["right_shoulder"], lm["right_elbow"]);
+        float rLo = Angle(lm["right_elbow"], lm["right_wrist"]);
+
+        float lTh = Angle(lm["left_hip"], lm["left_knee"]);
+        float lLg = Angle(lm["left_knee"], lm["left_ankle"]);
+
+        float rTh = Angle(lm["right_hip"], lm["right_knee"]);
+        float rLg = Angle(lm["right_knee"], lm["right_ankle"]);
+
+        // --- First frame: capture user neutral pose ---
+        if (!calibrated)
         {
-            float mocapTorso = Distance(hipC, shC);
-            float puppetTorso = Distance(Lower_body.localPosition, Upper_body.localPosition);
+            nTorso = torsoA;
+            nHead = headA;
 
-            torsoScale = puppetTorso / mocapTorso;
+            nLUArm = lUp; nLLArm = lLo;
+            nRUArm = rUp; nRLArm = rLo;
 
-            // ARM LENGTHS
-            float mocapUpperArm = Distance(raw["left_shoulder"], raw["left_elbow"]);
-            float puppetUpperArm = Distance(Upper_body.localPosition, LeftHandTarget.localPosition); // approximate
-            upperArmScale = puppetUpperArm / (mocapUpperArm * torsoScale);
-
-            float mocapLowerArm = Distance(raw["left_elbow"], raw["left_wrist"]);
-            float puppetLowerArm = Distance(LeftHandTarget.localPosition, LeftFootTarget.localPosition) * 0.5f; 
-            lowerArmScale = puppetLowerArm / (mocapLowerArm * torsoScale);
-
-            // LEG LENGTHS
-            float mocapUpperLeg = Distance(raw["left_hip"], raw["left_knee"]);
-            float puppetUpperLeg = Distance(Lower_body.localPosition, LeftFootTarget.localPosition) * 0.7f;
-            upperLegScale = puppetUpperLeg / (mocapUpperLeg * torsoScale);
-
-            float mocapLowerLeg = Distance(raw["left_knee"], raw["left_ankle"]);
-            float puppetLowerLeg = Distance(LeftFootTarget.localPosition, Lower_body.localPosition) * 0.5f;
-            lowerLegScale = puppetLowerLeg / (mocapLowerLeg * torsoScale);
+            nLThigh = lTh; nLLeg = lLg;
+            nRThigh = rTh; nRLeg = rLg;
 
             calibrated = true;
-            Debug.Log("<color=green>[CALIBRATED] Proportion retargeting enabled ✔</color>");
+            Debug.Log("<color=cyan>[Puppet] Neutral pose captured ✓</color>");
             return;
         }
 
-        if (!calibrated) return;
+        // --- Apply deltas with base offsets ---
 
-        // ==============================
-        // RETARGETING HELPERS
-        // ==============================
-        Vector2 MapLimb(Vector2 baseHip, Vector2 rawJoint, float limbScale)
-        {
-            Vector2 rel = (rawJoint - baseHip) * torsoScale * limbScale;
-            return puppetHipLocal + rel;
-        }
-
-        // ==============================
-        // ARM TARGETS
-        // ==============================
-
-        Vector2 lElbow = raw["left_elbow"];
-        Vector2 lWrist = raw["left_wrist"];
-
-        Vector2 rElbow = raw["right_elbow"];
-        Vector2 rWrist = raw["right_wrist"];
-
-        LeftHandTarget.localPosition =
-            Smooth("lh", MapLimb(hipC, lWrist, lowerArmScale));
-
-        RightHandTarget.localPosition =
-            Smooth("rh", MapLimb(hipC, rWrist, lowerArmScale));
-
-        LeftArmSolver.UpdateIK(0);
-        RightArmSolver.UpdateIK(0);
-
-        // ==============================
-        // LEG TARGETS
-        // ==============================
-        Vector2 lAnk = raw["left_ankle"];
-        Vector2 rAnk = raw["right_ankle"];
-
-        LeftFootTarget.localPosition =
-            Smooth("lf", MapLimb(hipC, lAnk, lowerLegScale));
-
-        RightFootTarget.localPosition =
-            Smooth("rf", MapLimb(hipC, rAnk, lowerLegScale));
-
-        LeftLegSolver.UpdateIK(0);
-        RightLegSolver.UpdateIK(0);
-
-        // ==============================
-        // BODY ROTATION
-        // ==============================
-        float torsoAngle = Angle(hipC, shC);
+        float torsoAngle = Smooth("torso", torsoOffset + (torsoA - nTorso) * torsoIntensity);
         Upper_body.localRotation = Quaternion.Euler(0, 0, torsoAngle);
         Lower_body.localRotation = Quaternion.Euler(0, 0, torsoAngle);
 
-        float headAngle = Angle(shC, raw["nose"]);
+        float headAngle = Smooth("head", headOffset + (headA - nHead) * headIntensity);
         Head.localRotation = Quaternion.Euler(0, 0, headAngle);
+
+        // LEFT ARM
+        float lShldr = Smooth("lSh", leftShoulderOffset + (lUp - nLUArm) * armIntensity);
+        float lArm   = Smooth("lArm", leftArmOffset     + (lLo - nLLArm) * armIntensity);
+
+        Left_shoulder.localRotation = Quaternion.Euler(0, 0, lShldr);
+        Left_arm.localRotation      = Quaternion.Euler(0, 0, lArm);
+
+        // RIGHT ARM
+        float rShldr = Smooth("rSh", rightShoulderOffset + (rUp - nRUArm) * armIntensity);
+        float rArm   = Smooth("rArm", rightArmOffset      + (rLo - nRLArm) * armIntensity);
+
+        Right_shoulder.localRotation = Quaternion.Euler(0, 0, rShldr);
+        Right_arm.localRotation      = Quaternion.Euler(0, 0, rArm);
+
+        // LEFT LEG
+        float lThigh = Smooth("lTh", leftThighOffset + (lTh - nLThigh) * legIntensity);
+        float lLeg   = Smooth("lLg", leftLegOffset   + (lLg - nLLeg)   * legIntensity);
+
+        Left_thigh.localRotation = Quaternion.Euler(0, 0, lThigh);
+        Left_leg.localRotation   = Quaternion.Euler(0, 0, lLeg);
+
+        // RIGHT LEG
+        float rThigh = Smooth("rTh", rightThighOffset + (rTh - nRThigh) * legIntensity);
+        float rLeg   = Smooth("rLg", rightLegOffset   + (rLg - nRLeg)   * legIntensity);
+
+        Right_thigh.localRotation = Quaternion.Euler(0, 0, rThigh);
+        Right_leg.localRotation   = Quaternion.Euler(0, 0, rLeg);
     }
 }

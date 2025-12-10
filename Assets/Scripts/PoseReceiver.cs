@@ -441,6 +441,34 @@ public class PoseReceiver : MonoBehaviour
         return HasCurrentPose() ? cachedSimplePose : null;
     }
 
+    // Get pose data for a specific person index
+    public bool HasPoseForPerson(int personIndex)
+    {
+        return hasValidPose &&
+               currentPoseData != null &&
+               currentPoseData.people != null &&
+               personIndex >= 0 &&
+               personIndex < currentPoseData.people.Count &&
+               (Time.time - lastPoseUpdateTime) < poseTimeoutSeconds;
+    }
+
+    public SimplePoseData GetPoseForPerson(int personIndex)
+    {
+        if (!HasPoseForPerson(personIndex)) return null;
+
+        PersonData person = currentPoseData.people[personIndex];
+        if (person == null || person.landmarks == null) return null;
+
+        SimplePoseData simplePose = new SimplePoseData
+        {
+            landmarks = person.landmarks.ToArray(),
+            timestamp = currentPoseData.timestamp,
+            frame_id = currentPoseData.frame_id
+        };
+
+        return simplePose;
+    }
+
     // Legacy support for direct PersonData access
     public PersonData GetCurrentPersonData()
     {
