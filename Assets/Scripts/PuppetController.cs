@@ -53,6 +53,14 @@ public class PuppetController : MonoBehaviour
     [Header("Motion Smoothing")]
     [Range(0,1)] public float smoothing = 0.25f;
 
+    [Header("Rotation Limits (degrees)")]
+    public float torsoRotationLimit = 45f;
+    public float headRotationLimit = 60f;
+    public float shoulderRotationLimit = 120f;
+    public float armRotationLimit = 150f;
+    public float thighRotationLimit = 90f;
+    public float legRotationLimit = 120f;
+
     private bool calibrated = false;
 
     // Neutral (user)
@@ -131,37 +139,37 @@ public class PuppetController : MonoBehaviour
 
         // --- Apply deltas with base offsets ---
 
-        float torsoAngle = Smooth("torso", torsoOffset + (torsoA - nTorso) * torsoIntensity);
-        Upper_body.localRotation = Quaternion.Euler(0, 0, torsoAngle);
+        float torsoAngle = Smooth("torso", torsoOffset + Mathf.Clamp((torsoA - nTorso) * torsoIntensity, -torsoRotationLimit, torsoRotationLimit));
+        Upper_body.localRotation = Quaternion.Euler(0, 0, torsoAngle - 90f);
         Lower_body.localRotation = Quaternion.Euler(0, 0, torsoAngle);
 
-        float headAngle = Smooth("head", headOffset + (headA - nHead) * headIntensity);
+        float headAngle = Smooth("head", headOffset + Mathf.Clamp((headA - nHead) * headIntensity, -headRotationLimit, headRotationLimit));
         Head.localRotation = Quaternion.Euler(0, 0, headAngle);
 
         // LEFT ARM
-        float lShldr = Smooth("lSh", leftShoulderOffset + (lUp - nLUArm) * armIntensity);
-        float lArm   = Smooth("lArm", leftArmOffset     + (lLo - nLLArm) * armIntensity);
+        float lShldr = Smooth("lSh", leftShoulderOffset + Mathf.Clamp((lUp - nLUArm) * armIntensity, -shoulderRotationLimit, shoulderRotationLimit));
+        float lArm   = Smooth("lArm", leftArmOffset     + Mathf.Clamp((lLo - nLLArm) * armIntensity, -armRotationLimit, armRotationLimit));
 
         Left_shoulder.localRotation = Quaternion.Euler(0, 0, lShldr);
         Left_arm.localRotation      = Quaternion.Euler(0, 0, lArm);
 
         // RIGHT ARM
-        float rShldr = Smooth("rSh", rightShoulderOffset + (rUp - nRUArm) * armIntensity);
-        float rArm   = Smooth("rArm", rightArmOffset      + (rLo - nRLArm) * armIntensity);
+        float rShldr = Smooth("rSh", rightShoulderOffset + Mathf.Clamp((rUp - nRUArm) * armIntensity, -shoulderRotationLimit, shoulderRotationLimit));
+        float rArm   = Smooth("rArm", rightArmOffset      + Mathf.Clamp((rLo - nRLArm) * armIntensity, -armRotationLimit, armRotationLimit));
 
         Right_shoulder.localRotation = Quaternion.Euler(0, 0, rShldr);
         Right_arm.localRotation      = Quaternion.Euler(0, 0, rArm);
 
         // LEFT LEG
-        float lThigh = Smooth("lTh", leftThighOffset + (lTh - nLThigh) * legIntensity);
-        float lLeg   = Smooth("lLg", leftLegOffset   + (lLg - nLLeg)   * legIntensity);
+        float lThigh = Smooth("lTh", leftThighOffset + Mathf.Clamp((lTh - nLThigh) * legIntensity, -thighRotationLimit, thighRotationLimit));
+        float lLeg   = Smooth("lLg", leftLegOffset   + Mathf.Clamp((lLg - nLLeg)   * legIntensity, -legRotationLimit, legRotationLimit));
 
         Left_thigh.localRotation = Quaternion.Euler(0, 0, lThigh);
         Left_leg.localRotation   = Quaternion.Euler(0, 0, lLeg);
 
         // RIGHT LEG
-        float rThigh = Smooth("rTh", rightThighOffset + (rTh - nRThigh) * legIntensity);
-        float rLeg   = Smooth("rLg", rightLegOffset   + (rLg - nRLeg)   * legIntensity);
+        float rThigh = Smooth("rTh", rightThighOffset + Mathf.Clamp((rTh - nRThigh) * legIntensity, -thighRotationLimit, thighRotationLimit));
+        float rLeg   = Smooth("rLg", rightLegOffset   + Mathf.Clamp((rLg - nRLeg)   * legIntensity, -legRotationLimit, legRotationLimit));
 
         Right_thigh.localRotation = Quaternion.Euler(0, 0, rThigh);
         Right_leg.localRotation   = Quaternion.Euler(0, 0, rLeg);
