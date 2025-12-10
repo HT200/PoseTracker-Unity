@@ -62,6 +62,7 @@ public class PuppetController : MonoBehaviour
     public float legRotationLimit = 120f;
 
     private bool calibrated = false;
+    private bool facingLeft = false; // Auto-detected
 
     // Neutral (user)
     private float nTorso, nHead;
@@ -97,22 +98,40 @@ public class PuppetController : MonoBehaviour
         if (pose == null || pose.landmarks == null) return;
 
         var lm = new Dictionary<string, Vector2>();
+        var visibility = new Dictionary<string, float>();
         foreach (var p in pose.landmarks)
+        {
             lm[p.name] = new Vector2(p.position.x, p.position.y);
+            visibility[p.name] = p.visibility;
+        }
 
         if (!lm.ContainsKey("left_shoulder")) return;
+
+        // Check visibility for each limb (threshold of 0.5)
+        bool torsoVisible = visibility.GetValueOrDefault("left_hip", 0) > 0.5f && visibility.GetValueOrDefault("right_hip", 0) > 0.5f &&
+                            visibility.GetValueOrDefault("left_shoulder", 0) > 0.5f && visibility.GetValueOrDefault("right_shoulder", 0) > 0.5f;
+        bool headVisible = visibility.GetValueOrDefault("nose", 0) > 0.5f;
+        bool leftArmVisible = visibility.GetValueOrDefault("left_shoulder", 0) > 0.5f && visibility.GetValueOrDefault("left_elbow", 0) > 0.5f && visibility.GetValueOrDefault("left_wrist", 0) > 0.5f;
+        bool rightArmVisible = visibility.GetValueOrDefault("right_shoulder", 0) > 0.5f && visibility.GetValueOrDefault("right_elbow", 0) > 0.5f && visibility.GetValueOrDefault("right_wrist", 0) > 0.5f;
+        bool leftLegVisible = visibility.GetValueOrDefault("left_hip", 0) > 0.5f && visibility.GetValueOrDefault("left_knee", 0) > 0.5f && visibility.GetValueOrDefault("left_ankle", 0) > 0.5f;
+        bool rightLegVisible = visibility.GetValueOrDefault("right_hip", 0) > 0.5f && visibility.GetValueOrDefault("right_knee", 0) > 0.5f && visibility.GetValueOrDefault("right_ankle", 0) > 0.5f;
 
         Vector2 hipC = (lm["left_hip"] + lm["right_hip"]) * 0.5f;
         Vector2 shC  = (lm["left_shoulder"] + lm["right_shoulder"]) * 0.5f;
 
+        // Auto-detect facing direction based on shoulder depth (x position in camera space)
+        // Assuming mirrored camera view: if left shoulder has higher x, person is facing left
+        facingLeft = lm["left_shoulder"].x > lm["right_shoulder"].x;
+
         float torsoA = Angle(hipC, shC);
         float headA  = lm.ContainsKey("nose") ? Angle(shC, lm["nose"]) : torsoA;
 
-        float lUp = Angle(lm["left_shoulder"], lm["left_elbow"]);
-        float lLo = Angle(lm["left_elbow"], lm["left_wrist"]);
+        // Get arm angles and inverse them for side view puppet
+        float lUp = -Angle(lm["right_shoulder"], lm["right_elbow"]);
+        float lLo = -Angle(lm["right_elbow"], lm["right_wrist"]);
 
-        float rUp = Angle(lm["right_shoulder"], lm["right_elbow"]);
-        float rLo = Angle(lm["right_elbow"], lm["right_wrist"]);
+        float rUp = -Angle(lm["left_shoulder"], lm["left_elbow"]);
+        float rLo = -Angle(lm["left_elbow"], lm["left_wrist"]);
 
         float lTh = Angle(lm["left_hip"], lm["left_knee"]);
         float lLg = Angle(lm["left_knee"], lm["left_ankle"]);
@@ -139,37 +158,59 @@ public class PuppetController : MonoBehaviour
 
         // --- Apply deltas with base offsets ---
 
-        float torsoAngle = Smooth("torso", torsoOffset + Mathf.Clamp((torsoA - nTorso) * torsoIntensity, -torsoRotationLimit, torsoRotationLimit));
+        // Torso - return to neutral if not visible
+        float torsoAngle = torsoVisible 
+            ? Smooth("torso", torsoOffset + Mathf.Clamp((torsoA - nTorso) * torsoIntensity, -torsoRotationLimit, torsoRotationLimit))
+            : Smooth("torso", torsoOffset);
         Upper_body.localRotation = Quaternion.Euler(0, 0, torsoAngle - 90f);
         Lower_body.localRotation = Quaternion.Euler(0, 0, torsoAngle);
 
-        float headAngle = Smooth("head", headOffset + Mathf.Clamp((headA - nHead) * headIntensity, -headRotationLimit, headRotationLimit));
+        // Head - return to neutral if not visible
+        float headAngle = headVisible
+            ? Smooth("head", headOffset + Mathf.Clamp((headA - nHead) * headIntensity, -headRotationLimit, headRotationLimit))
+            : Smooth("head", headOffset);
         Head.localRotation = Quaternion.Euler(0, 0, headAngle);
 
-        // LEFT ARM
-        float lShldr = Smooth("lSh", leftShoulderOffset + Mathf.Clamp((lUp - nLUArm) * armIntensity, -shoulderRotationLimit, shoulderRotationLimit));
-        float lArm   = Smooth("lArm", leftArmOffset     + Mathf.Clamp((lLo - nLLArm) * armIntensity, -armRotationLimit, armRotationLimit));
+        // LEFT ARM - return to neutral if not visible
+        float lShldr = leftArmVisible
+            ? Smooth("lSh", leftShoulderOffset + Mathf.Clamp((lUp - nLUArm) * armIntensity, -shoulderRotationLimit, shoulderRotationLimit))
+            : Smooth("lSh", leftShoulderOffset);
+        float lArm = leftArmVisible
+            ? Smooth("lArm", leftArmOffset + Mathf.Clamp((lLo - nLLArm) * armIntensity, -armRotationLimit, armRotationLimit))
+            : Smooth("lArm", leftArmOffset);
 
         Left_shoulder.localRotation = Quaternion.Euler(0, 0, lShldr);
         Left_arm.localRotation      = Quaternion.Euler(0, 0, lArm);
 
-        // RIGHT ARM
-        float rShldr = Smooth("rSh", rightShoulderOffset + Mathf.Clamp((rUp - nRUArm) * armIntensity, -shoulderRotationLimit, shoulderRotationLimit));
-        float rArm   = Smooth("rArm", rightArmOffset      + Mathf.Clamp((rLo - nRLArm) * armIntensity, -armRotationLimit, armRotationLimit));
+        // RIGHT ARM - return to neutral if not visible
+        float rShldr = rightArmVisible
+            ? Smooth("rSh", rightShoulderOffset + Mathf.Clamp((rUp - nRUArm) * armIntensity, -shoulderRotationLimit, shoulderRotationLimit))
+            : Smooth("rSh", rightShoulderOffset);
+        float rArm = rightArmVisible
+            ? Smooth("rArm", rightArmOffset + Mathf.Clamp((rLo - nRLArm) * armIntensity, -armRotationLimit, armRotationLimit))
+            : Smooth("rArm", rightArmOffset);
 
         Right_shoulder.localRotation = Quaternion.Euler(0, 0, rShldr);
         Right_arm.localRotation      = Quaternion.Euler(0, 0, rArm);
 
-        // LEFT LEG
-        float lThigh = Smooth("lTh", leftThighOffset + Mathf.Clamp((lTh - nLThigh) * legIntensity, -thighRotationLimit, thighRotationLimit));
-        float lLeg   = Smooth("lLg", leftLegOffset   + Mathf.Clamp((lLg - nLLeg)   * legIntensity, -legRotationLimit, legRotationLimit));
+        // LEFT LEG - return to neutral if not visible
+        float lThigh = leftLegVisible
+            ? Smooth("lTh", leftThighOffset + Mathf.Clamp((lTh - nLThigh) * legIntensity, -thighRotationLimit, thighRotationLimit))
+            : Smooth("lTh", leftThighOffset);
+        float lLeg = leftLegVisible
+            ? Smooth("lLg", leftLegOffset + Mathf.Clamp((lLg - nLLeg) * legIntensity, -legRotationLimit, legRotationLimit))
+            : Smooth("lLg", leftLegOffset);
 
         Left_thigh.localRotation = Quaternion.Euler(0, 0, lThigh);
         Left_leg.localRotation   = Quaternion.Euler(0, 0, lLeg);
 
-        // RIGHT LEG
-        float rThigh = Smooth("rTh", rightThighOffset + Mathf.Clamp((rTh - nRThigh) * legIntensity, -thighRotationLimit, thighRotationLimit));
-        float rLeg   = Smooth("rLg", rightLegOffset   + Mathf.Clamp((rLg - nRLeg)   * legIntensity, -legRotationLimit, legRotationLimit));
+        // RIGHT LEG - return to neutral if not visible
+        float rThigh = rightLegVisible
+            ? Smooth("rTh", rightThighOffset + Mathf.Clamp((rTh - nRThigh) * legIntensity, -thighRotationLimit, thighRotationLimit))
+            : Smooth("rTh", rightThighOffset);
+        float rLeg = rightLegVisible
+            ? Smooth("rLg", rightLegOffset + Mathf.Clamp((rLg - nRLeg) * legIntensity, -legRotationLimit, legRotationLimit))
+            : Smooth("rLg", rightLegOffset);
 
         Right_thigh.localRotation = Quaternion.Euler(0, 0, rThigh);
         Right_leg.localRotation   = Quaternion.Euler(0, 0, rLeg);
