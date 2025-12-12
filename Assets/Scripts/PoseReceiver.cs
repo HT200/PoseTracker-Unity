@@ -91,6 +91,8 @@ public class PoseReceiver : MonoBehaviour
 
     void Start()
     {
+        
+        
         if (autoStart)
         {
             if (useTCP)

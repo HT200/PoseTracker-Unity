@@ -123,7 +123,7 @@ Transform:
   m_GameObject: {fileID: 1422498750577271451}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -4.52, y: 0, z: 0}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -236,7 +236,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PuppetController
   poseReceiver: {fileID: 0}
-  personIndex: 0
+  personIndex: 1
   Lower_body: {fileID: 5402918770727930411}
   Upper_body: {fileID: 8092423448390650480}
   Head: {fileID: 2148209999654112235}
@@ -278,17 +278,14 @@ MonoBehaviour:
   cameraFieldHeight: 15
   cameraFieldOffset: {x: -5, y: 0}
   positionSmoothing: 0.15
+  maxMovementSpeed: 10
   heldItemSettings:
   - prefab: {fileID: 8256599743250228077, guid: 6261c0ac73ec0cd468ade5d1d2f72f88, type: 3}
     positionOffset: {x: 0.33, y: 0.49, z: 0}
     rotationOffset: {x: 0, y: 0, z: -12}
-    sortingLayerName: Default
-    sortingOrder: 5
   - prefab: {fileID: 8812445983386381710, guid: e5d72c8aebf651d409fbfd0b2a089ad0, type: 3}
     positionOffset: {x: 0.26, y: 0.75, z: 0}
     rotationOffset: {x: 0, y: 0, z: 85}
-    sortingLayerName: Default
-    sortingOrder: 5
   itemSpawnChance: 1
 --- !u!1 &1506644337894153488
 GameObject:

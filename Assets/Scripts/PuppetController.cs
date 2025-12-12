@@ -75,6 +75,7 @@ public class PuppetController : MonoBehaviour
     public float cameraFieldHeight = 15f; // Unity units height that camera field represents
     public Vector2 cameraFieldOffset = new Vector2(-15f, 0f); // Offset so camera edges are off-screen
     [Range(0,1)] public float positionSmoothing = 0.05f;
+    public float maxMovementSpeed = 15f; // Maximum units per second the puppet can move (prevents teleporting)
 
     [Header("Held Items")]
     public HeldItemSettings[] heldItemSettings; // Array of items with individual offsets
@@ -87,6 +88,7 @@ public class PuppetController : MonoBehaviour
     private GameObject currentHeldItem = null; // Currently held item instance
     private Dictionary<int, int> personItemAssignments = new Dictionary<int, int>(); // Maps person_id to item index (-1 = no item)
     private int currentItemIndex = -1; // Track which item index is currently held for runtime updates
+    private SpriteRenderer[] spriteRenderers; // Cache all sprite renderers for enable/disable
 
     // Neutral (user)
     private float nTorso, nHead;
@@ -96,6 +98,12 @@ public class PuppetController : MonoBehaviour
     private float nRThigh, nRLeg;
 
     private Dictionary<string, float> smoothMap = new();
+
+    void Start()
+    {
+        // Cache all sprite renderers for efficient enable/disable
+        spriteRenderers = GetComponentsInChildren<SpriteRenderer>();
+    }
 
     float Smooth(string key, float target)
     {
@@ -171,7 +179,15 @@ public class PuppetController : MonoBehaviour
 
         // Use personIndex to get specific person's pose
         PoseReceiver.SimplePoseData pose = poseReceiver.GetPoseForPerson(personIndex);
-        if (pose == null || pose.landmarks == null) return;
+        if (pose == null || pose.landmarks == null)
+        {
+            // No pose detected - disable puppet
+            SetPuppetActive(false);
+            return;
+        }
+
+        // Pose detected - ensure puppet is visible
+        SetPuppetActive(true);
 
         // Get actual person_id from PoseReceiver
         int currentPersonId = GetCurrentPersonId();
@@ -219,11 +235,22 @@ public class PuppetController : MonoBehaviour
             // Camera field extends beyond screen bounds so puppets can enter from sides
             float worldX = (lowerBodyPosition.x * cameraFieldWidth) + cameraFieldOffset.x;
             
+            // Invert position for puppet index 1 (flipped puppet)
+            if (personIndex == 1)
+            {
+                worldX = -worldX;
+            }
+            
             Vector2 targetPosition = new Vector2(worldX, 0f);
             Vector2 smoothPos = SmoothPosition(targetPosition);
             
+            // Clamp movement speed to prevent teleporting
+            Vector3 currentPos = transform.position;
+            float maxDelta = maxMovementSpeed * Time.deltaTime;
+            float clampedX = Mathf.Clamp(smoothPos.x, currentPos.x - maxDelta, currentPos.x + maxDelta);
+            
             // Update puppet root position (only X, Y stays at 0, preserve Z)
-            transform.position = new Vector3(smoothPos.x, 0f, transform.position.z);
+            transform.position = new Vector3(clampedX, 0f, transform.position.z);
         }
 
         // Auto-detect facing direction based on shoulder depth (x position in camera space)
@@ -300,25 +327,28 @@ public class PuppetController : MonoBehaviour
 
         // --- Apply deltas with base offsets ---
 
+        // Invert deltas for puppet index 1 (flipped puppet)
+        float invertMultiplier = (personIndex == 1) ? -1f : 1f;
+
         // Torso - return to neutral if not visible
         float torsoAngle = torsoVisible 
-            ? Smooth("torso", torsoOffset + Mathf.Clamp((torsoA - nTorso) * torsoIntensity, -torsoRotationLimit, torsoRotationLimit))
+            ? Smooth("torso", torsoOffset + Mathf.Clamp((torsoA - nTorso) * torsoIntensity * invertMultiplier, -torsoRotationLimit, torsoRotationLimit))
             : Smooth("torso", torsoOffset);
         Upper_body.localRotation = Quaternion.Euler(0, 0, torsoAngle - 90f);
         Lower_body.localRotation = Quaternion.Euler(0, 0, torsoAngle);
 
         // Head - return to neutral if not visible
         float headAngle = headVisible
-            ? Smooth("head", headOffset + Mathf.Clamp((headA - nHead) * headIntensity, -headRotationLimit, headRotationLimit))
+            ? Smooth("head", headOffset + Mathf.Clamp((headA - nHead) * headIntensity * invertMultiplier, -headRotationLimit, headRotationLimit))
             : Smooth("head", headOffset);
         Head.localRotation = Quaternion.Euler(0, 0, headAngle);
 
         // LEFT ARM - return to neutral if not visible
         float lShldr = leftArmVisible
-            ? Smooth("lSh", leftShoulderOffset + Mathf.Clamp((lUp - nLUArm) * armIntensity, -shoulderRotationLimit, shoulderRotationLimit))
+            ? Smooth("lSh", leftShoulderOffset + Mathf.Clamp((lUp - nLUArm) * armIntensity * invertMultiplier, -shoulderRotationLimit, shoulderRotationLimit))
             : Smooth("lSh", leftShoulderOffset);
         float lArm = leftArmVisible
-            ? Smooth("lArm", leftArmOffset + Mathf.Clamp((lLo - nLLArm) * armIntensity, -armRotationLimit, armRotationLimit))
+            ? Smooth("lArm", leftArmOffset + Mathf.Clamp((lLo - nLLArm) * armIntensity * invertMultiplier, -armRotationLimit, armRotationLimit))
             : Smooth("lArm", leftArmOffset);
 
         Left_shoulder.localRotation = Quaternion.Euler(0, 0, lShldr);
@@ -326,10 +356,10 @@ public class PuppetController : MonoBehaviour
 
         // RIGHT ARM - return to neutral if not visible
         float rShldr = rightArmVisible
-            ? Smooth("rSh", rightShoulderOffset + Mathf.Clamp((rUp - nRUArm) * armIntensity, -shoulderRotationLimit, shoulderRotationLimit))
+            ? Smooth("rSh", rightShoulderOffset + Mathf.Clamp((rUp - nRUArm) * armIntensity * invertMultiplier, -shoulderRotationLimit, shoulderRotationLimit))
             : Smooth("rSh", rightShoulderOffset);
         float rArm = rightArmVisible
-            ? Smooth("rArm", rightArmOffset + Mathf.Clamp((rLo - nRLArm) * armIntensity, -armRotationLimit, armRotationLimit))
+            ? Smooth("rArm", rightArmOffset + Mathf.Clamp((rLo - nRLArm) * armIntensity * invertMultiplier, -armRotationLimit, armRotationLimit))
             : Smooth("rArm", rightArmOffset);
 
         Right_shoulder.localRotation = Quaternion.Euler(0, 0, rShldr);
@@ -337,10 +367,10 @@ public class PuppetController : MonoBehaviour
 
         // LEFT LEG - return to neutral if not visible
         float lThigh = leftLegVisible
-            ? Smooth("lTh", leftThighOffset + Mathf.Clamp((lTh - nLThigh) * legIntensity, -thighRotationLimit, thighRotationLimit))
+            ? Smooth("lTh", leftThighOffset + Mathf.Clamp((lTh - nLThigh) * legIntensity * invertMultiplier, -thighRotationLimit, thighRotationLimit))
             : Smooth("lTh", leftThighOffset);
         float lLeg = leftLegVisible
-            ? Smooth("lLg", leftLegOffset + Mathf.Clamp((lLg - nLLeg) * legIntensity, -legRotationLimit, legRotationLimit))
+            ? Smooth("lLg", leftLegOffset + Mathf.Clamp((lLg - nLLeg) * legIntensity * invertMultiplier, -legRotationLimit, legRotationLimit))
             : Smooth("lLg", leftLegOffset);
 
         Left_thigh.localRotation = Quaternion.Euler(0, 0, lThigh);
@@ -348,10 +378,10 @@ public class PuppetController : MonoBehaviour
 
         // RIGHT LEG - return to neutral if not visible
         float rThigh = rightLegVisible
-            ? Smooth("rTh", rightThighOffset + Mathf.Clamp((rTh - nRThigh) * legIntensity, -thighRotationLimit, thighRotationLimit))
+            ? Smooth("rTh", rightThighOffset + Mathf.Clamp((rTh - nRThigh) * legIntensity * invertMultiplier, -thighRotationLimit, thighRotationLimit))
             : Smooth("rTh", rightThighOffset);
         float rLeg = rightLegVisible
-            ? Smooth("rLg", rightLegOffset + Mathf.Clamp((rLg - nRLeg) * legIntensity, -legRotationLimit, legRotationLimit))
+            ? Smooth("rLg", rightLegOffset + Mathf.Clamp((rLg - nRLeg) * legIntensity * invertMultiplier, -legRotationLimit, legRotationLimit))
             : Smooth("rLg", rightLegOffset);
 
         Right_thigh.localRotation = Quaternion.Euler(0, 0, rThigh);
@@ -430,6 +460,24 @@ public class PuppetController : MonoBehaviour
             HeldItemSettings itemSetting = heldItemSettings[currentItemIndex];
             currentHeldItem.transform.localPosition = itemSetting.positionOffset;
             currentHeldItem.transform.localRotation = Quaternion.Euler(itemSetting.rotationOffset);
+        }
+    }
+
+    void SetPuppetActive(bool active)
+    {
+        // Enable/disable all sprite renderers
+        if (spriteRenderers != null)
+        {
+            foreach (var sr in spriteRenderers)
+            {
+                if (sr != null) sr.enabled = active;
+            }
+        }
+
+        // Enable/disable held item
+        if (currentHeldItem != null)
+        {
+            currentHeldItem.SetActive(active);
         }
     }
 }
