@@ -2,6 +2,14 @@ using System.Collections.Generic;
 using UnityEngine;
 
 [System.Serializable]
+public class HeldItemSettings
+{
+    public GameObject prefab;
+    public Vector3 positionOffset = new Vector3(0.1f, 0.5f, 0f);
+    public Vector3 rotationOffset = new Vector3(0f, 0f, 90f);
+}
+
+[System.Serializable]
 public class BoneConfig
 {
     public Transform bone;
@@ -33,10 +41,20 @@ public class PuppetController : MonoBehaviour
     public BoneConfig RightThigh;
     public BoneConfig RightLeg;
 
+    [Header("Held Items")]
+    public HeldItemSettings[] heldItemSettings; // Array of items with individual offsets
+    [Range(0f, 1f)] public float itemSpawnChance = 0.5f; // Probability of spawning an item (0 = never, 1 = always)
+
     [Header("Smoothing")]
     private Dictionary<string, float> baselineMap = new();
     private bool calibrated = false;
     [Range(0, 1)] public float smoothing = 0.1f;
+
+    // Held item tracking
+    private int lastTrackedPersonId = -1; // Track which person ID we're currently following
+    private GameObject currentHeldItem = null; // Currently held item instance
+    private Dictionary<int, int> personItemAssignments = new Dictionary<int, int>(); // Maps person_id to item index (-1 = no item)
+    private int currentItemIndex = -1; // Track which item index is currently held for runtime updates
 
     void Calibrate(PersonData person)
     {
@@ -134,6 +152,19 @@ public class PuppetController : MonoBehaviour
         var person = receiver.GetPerson(personIndex);
         if (person == null) return;
 
+        // Get actual person_id from receiver
+        int currentPersonId = GetCurrentPersonId();
+        if (currentPersonId != -1)
+        {
+            // Check if this is a new person ID entering the frame
+            if (currentPersonId != lastTrackedPersonId)
+            {
+                // New person detected - spawn item based on stored assignment or create new
+                SpawnHeldItemForPerson(currentPersonId);
+                lastTrackedPersonId = currentPersonId;
+            }
+        }
+
         if (!calibrated)
         {
             Calibrate(person);
@@ -190,5 +221,80 @@ public class PuppetController : MonoBehaviour
         ApplyBone(RightLeg, "right_leg",
             GetRotationZ(person, "right_leg")
         );
+
+        // Update held item position to follow left hand
+        UpdateHeldItemPosition();
+    }
+
+    int GetCurrentPersonId()
+    {
+        // Get person_id from the current person data
+        var person = receiver.GetPerson(personIndex);
+        return person != null ? person.person_id : -1;
+    }
+
+    void SpawnHeldItemForPerson(int personId)
+    {
+        // Clear any existing held item
+        if (currentHeldItem != null)
+        {
+            Destroy(currentHeldItem);
+            currentHeldItem = null;
+        }
+
+        // Check if we have any item settings
+        if (heldItemSettings == null || heldItemSettings.Length == 0)
+            return;
+
+        int itemIndex = -1; // -1 means no item
+
+        // Check if this person already has an assignment
+        if (personItemAssignments.ContainsKey(personId))
+        {
+            itemIndex = personItemAssignments[personId];
+        }
+        else
+        {
+            // New person - randomly assign item or no item
+            if (Random.value <= itemSpawnChance)
+            {
+                // Assign random item
+                itemIndex = Random.Range(0, heldItemSettings.Length);
+            }
+            // Store assignment for this person
+            personItemAssignments[personId] = itemIndex;
+        }
+
+        // Spawn item if assigned
+        if (itemIndex >= 0 && itemIndex < heldItemSettings.Length)
+        {
+            HeldItemSettings itemSetting = heldItemSettings[itemIndex];
+            if (itemSetting.prefab != null && LeftArm.bone != null)
+            {
+                // Instantiate item and attach to left hand (using LeftArm bone as hand)
+                currentHeldItem = Instantiate(itemSetting.prefab, LeftArm.bone);
+                currentHeldItem.transform.localPosition = itemSetting.positionOffset;
+                currentHeldItem.transform.localRotation = Quaternion.Euler(itemSetting.rotationOffset);
+                currentItemIndex = itemIndex; // Store for runtime updates
+
+                Debug.Log($"<color=yellow>[Puppet] Person {personId} holding: {itemSetting.prefab.name}</color>");
+            }
+        }
+        else
+        {
+            currentItemIndex = -1; // No item
+            Debug.Log($"<color=yellow>[Puppet] Person {personId} has no item</color>");
+        }
+    }
+
+    void UpdateHeldItemPosition()
+    {
+        // Apply runtime offset adjustments from inspector
+        if (currentHeldItem != null && LeftArm.bone != null && currentItemIndex >= 0 && currentItemIndex < heldItemSettings.Length)
+        {
+            HeldItemSettings itemSetting = heldItemSettings[currentItemIndex];
+            currentHeldItem.transform.localPosition = itemSetting.positionOffset;
+            currentHeldItem.transform.localRotation = Quaternion.Euler(itemSetting.rotationOffset);
+        }
     }
 }
