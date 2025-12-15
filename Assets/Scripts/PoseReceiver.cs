@@ -33,6 +33,7 @@ public class BoneRotation
     public float z;
 }
 
+
 #endregion
 
 public class PoseReceiver : MonoBehaviour
@@ -51,6 +52,10 @@ public class PoseReceiver : MonoBehaviour
 
     void Start()
     {
+        // Ensure no frame rate restrictions for optimal UDP packet processing
+        Application.targetFrameRate = -1;  // Unlimited frame rate
+        QualitySettings.vSyncCount = 0;    // Disable VSync
+        
         udp = new UdpClient(port);
         running = true;
 
@@ -60,7 +65,9 @@ public class PoseReceiver : MonoBehaviour
         };
         receiveThread.Start();
 
-        Debug.Log($"[PoseReceiver] Listening UDP on {port}");
+        Debug.Log($"[PoseReceiver] Listening UDP on port {port} from ANY IP address");
+        Debug.Log($"[PoseReceiver] Ready to receive data from Ubuntu machine");
+        Debug.Log($"[PoseReceiver] Frame rate restrictions removed for optimal UDP processing");
     }
 
     void Update()
@@ -88,10 +95,10 @@ public class PoseReceiver : MonoBehaviour
                 byte[] data = udp.Receive(ref ep);
                 string json = Encoding.UTF8.GetString(data);
 
-                Debug.Log("[RAW JSON] " + json);
+                // Debug.Log($"[PoseReceiver] Received {data.Length} bytes from {ep.Address}:{ep.Port}");  // Commented for performance
+                // Debug.Log("[RAW JSON] " + json);  // Commented for performance - this creates significant overhead
 
                 PoseData frame = JsonUtility.FromJson<PoseData>(json);
-
 
                 if (frame != null && frame.people != null)
                     queue.Enqueue(frame);
@@ -112,6 +119,12 @@ public class PoseReceiver : MonoBehaviour
             return null;
 
         return latestFrame.people[index];
+    }
+
+    public PersonData GetCurrentPersonData()
+    {
+        // Return the first available person
+        return GetPerson(0);
     }
 
     void OnDestroy()
