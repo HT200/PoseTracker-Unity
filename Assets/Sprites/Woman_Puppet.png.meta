@@ -1,0 +1,598 @@
+fileFormatVersion: 2
+guid: 06c8a545fd0b1494e97eed2a47e324de
+TextureImporter:
+  internalIDToNameTable:
+  - first:
+      213: -2349718903989690720
+    second: Woman_Puppet_0
+  - first:
+      213: -3655657768585451227
+    second: Woman_Puppet_1
+  - first:
+      213: 4155425985178065134
+    second: Woman_Puppet_2
+  - first:
+      213: -6440819959666266746
+    second: Woman_Puppet_3
+  - first:
+      213: 8511501069749120264
+    second: Woman_Puppet_4
+  - first:
+      213: 5316158848255691937
+    second: Woman_Puppet_5
+  - first:
+      213: -1205459134512410738
+    second: Woman_Puppet_6
+  - first:
+      213: -906750063082478594
+    second: Woman_Puppet_7
+  - first:
+      213: -3658086579777117511
+    second: Woman_Puppet_8
+  - first:
+      213: -3602267490075670262
+    second: Woman_Puppet_9
+  - first:
+      213: 6471079514075349451
+    second: Woman_Puppet_10
+  - first:
+      213: -3654175229660987567
+    second: Woman_Puppet_11
+  - first:
+      213: 9203117197983382598
+    second: Woman_Puppet_12
+  - first:
+      213: 8629186121620850296
+    second: Woman_Puppet_13
+  - first:
+      213: -1949750986275378055
+    second: Woman_Puppet_14
+  - first:
+      213: 2500897528283193878
+    second: Woman_Puppet_15
+  - first:
+      213: -5370066316654267083
+    second: Woman_Puppet_16
+  - first:
+      213: -8307765094425093694
+    second: Woman_Puppet_17
+  externalObjects: {}
+  serializedVersion: 13
+  mipmaps:
+    mipMapMode: 0
+    enableMipMap: 0
+    sRGBTexture: 1
+    linearTexture: 0
+    fadeOut: 0
+    borderMipMap: 0
+    mipMapsPreserveCoverage: 0
+    alphaTestReferenceValue: 0.5
+    mipMapFadeDistanceStart: 1
+    mipMapFadeDistanceEnd: 3
+  bumpmap:
+    convertToNormalMap: 0
+    externalNormalMap: 0
+    heightScale: 0.25
+    normalMapFilter: 0
+    flipGreenChannel: 0
+  isReadable: 0
+  streamingMipmaps: 0
+  streamingMipmapsPriority: 0
+  vTOnly: 0
+  ignoreMipmapLimit: 0
+  grayScaleToAlpha: 0
+  generateCubemap: 6
+  cubemapConvolution: 0
+  seamlessCubemap: 0
+  textureFormat: 1
+  maxTextureSize: 2048
+  textureSettings:
+    serializedVersion: 2
+    filterMode: 1
+    aniso: 1
+    mipBias: 0
+    wrapU: 1
+    wrapV: 1
+    wrapW: 1
+  nPOTScale: 0
+  lightmap: 0
+  compressionQuality: 50
+  spriteMode: 2
+  spriteExtrude: 1
+  spriteMeshType: 1
+  alignment: 0
+  spritePivot: {x: 0.5, y: 0.5}
+  spritePixelsToUnits: 100
+  spriteBorder: {x: 0, y: 0, z: 0, w: 0}
+  spriteGenerateFallbackPhysicsShape: 1
+  alphaUsage: 1
+  alphaIsTransparency: 1
+  spriteTessellationDetail: -1
+  textureType: 8
+  textureShape: 1
+  singleChannelComponent: 0
+  flipbookRows: 1
+  flipbookColumns: 1
+  maxTextureSizeSet: 0
+  compressionQualitySet: 0
+  textureFormatSet: 0
+  ignorePngGamma: 0
+  applyGammaDecoding: 0
+  swizzle: 50462976
+  cookieLightType: 0
+  platformSettings:
+  - serializedVersion: 4
+    buildTarget: DefaultTexturePlatform
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: Standalone
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: WindowsStoreApps
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  spriteSheet:
+    serializedVersion: 2
+    sprites:
+    - serializedVersion: 2
+      name: Woman_Puppet_0
+      rect:
+        serializedVersion: 2
+        x: 1446
+        y: 9326
+        width: 910
+        height: 1062
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 0ae9cad2b1f146fd0800000000000000
+      internalID: -2349718903989690720
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Woman_Puppet_1
+      rect:
+        serializedVersion: 2
+        x: 1583
+        y: 9327
+        width: 22
+        height: 17
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 5292113c0ae744dc0800000000000000
+      internalID: -3655657768585451227
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Woman_Puppet_2
+      rect:
+        serializedVersion: 2
+        x: 500
+        y: 7644
+        width: 523
+        height: 1031
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: ee857f8cae90ba930800000000000000
+      internalID: 4155425985178065134
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Woman_Puppet_3
+      rect:
+        serializedVersion: 2
+        x: 1111
+        y: 4908
+        width: 1641
+        height: 4339
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 68da8d12f5c9d96a0800000000000000
+      internalID: -6440819959666266746
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Woman_Puppet_4
+      rect:
+        serializedVersion: 2
+        x: 3085
+        y: 7651
+        width: 665
+        height: 1126
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 80de0c7802dee1670800000000000000
+      internalID: 8511501069749120264
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Woman_Puppet_5
+      rect:
+        serializedVersion: 2
+        x: 3512
+        y: 7616
+        width: 12
+        height: 11
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 1ac84d76e4ac6c940800000000000000
+      internalID: 5316158848255691937
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Woman_Puppet_6
+      rect:
+        serializedVersion: 2
+        x: 97
+        y: 6727
+        width: 7
+        height: 27
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: e8f4320dd49554fe0800000000000000
+      internalID: -1205459134512410738
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Woman_Puppet_7
+      rect:
+        serializedVersion: 2
+        x: 129
+        y: 6456
+        width: 698
+        height: 985
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: ef3e7ed2f939a63f0800000000000000
+      internalID: -906750063082478594
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Woman_Puppet_8
+      rect:
+        serializedVersion: 2
+        x: 3499
+        y: 6539
+        width: 760
+        height: 1034
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 9b2e2c613addb3dc0800000000000000
+      internalID: -3658086579777117511
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Woman_Puppet_9
+      rect:
+        serializedVersion: 2
+        x: 16
+        y: 5785
+        width: 369
+        height: 558
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: a090a1cadcc220ec0800000000000000
+      internalID: -3602267490075670262
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Woman_Puppet_10
+      rect:
+        serializedVersion: 2
+        x: 4125
+        y: 5994
+        width: 377
+        height: 518
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: bc1c4c56884edc950800000000000000
+      internalID: 6471079514075349451
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Woman_Puppet_11
+      rect:
+        serializedVersion: 2
+        x: 1146
+        y: 2820
+        width: 636
+        height: 2030
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 15f76014df2c94dc0800000000000000
+      internalID: -3654175229660987567
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Woman_Puppet_12
+      rect:
+        serializedVersion: 2
+        x: 2163
+        y: 3059
+        width: 678
+        height: 1767
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 64c7614d45a08bf70800000000000000
+      internalID: 9203117197983382598
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Woman_Puppet_13
+      rect:
+        serializedVersion: 2
+        x: 1023
+        y: 726
+        width: 837
+        height: 1895
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 87601f7ee0701c770800000000000000
+      internalID: 8629186121620850296
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Woman_Puppet_14
+      rect:
+        serializedVersion: 2
+        x: 2157
+        y: 793
+        width: 835
+        height: 1839
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 97ca696eec711f4e0800000000000000
+      internalID: -1949750986275378055
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Woman_Puppet_15
+      rect:
+        serializedVersion: 2
+        x: 1175
+        y: 0
+        width: 819
+        height: 569
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 612e8f83d09f4b220800000000000000
+      internalID: 2500897528283193878
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Woman_Puppet_16
+      rect:
+        serializedVersion: 2
+        x: 2357
+        y: 12
+        width: 819
+        height: 570
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 53538870321b975b0800000000000000
+      internalID: -5370066316654267083
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Woman_Puppet_17
+      rect:
+        serializedVersion: 2
+        x: 2712
+        y: 8
+        width: 65
+        height: 6
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 2c9176db9a3e4bc80800000000000000
+      internalID: -8307765094425093694
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    outline: []
+    customData: 
+    physicsShape: []
+    bones: []
+    spriteID: 
+    internalID: 0
+    vertices: []
+    indices: 
+    edges: []
+    weights: []
+    secondaryTextures: []
+    spriteCustomMetadata:
+      entries: []
+    nameFileIdTable:
+      Woman_Puppet_0: -2349718903989690720
+      Woman_Puppet_1: -3655657768585451227
+      Woman_Puppet_10: 6471079514075349451
+      Woman_Puppet_11: -3654175229660987567
+      Woman_Puppet_12: 9203117197983382598
+      Woman_Puppet_13: 8629186121620850296
+      Woman_Puppet_14: -1949750986275378055
+      Woman_Puppet_15: 2500897528283193878
+      Woman_Puppet_16: -5370066316654267083
+      Woman_Puppet_17: -8307765094425093694
+      Woman_Puppet_2: 4155425985178065134
+      Woman_Puppet_3: -6440819959666266746
+      Woman_Puppet_4: 8511501069749120264
+      Woman_Puppet_5: 5316158848255691937
+      Woman_Puppet_6: -1205459134512410738
+      Woman_Puppet_7: -906750063082478594
+      Woman_Puppet_8: -3658086579777117511
+      Woman_Puppet_9: -3602267490075670262
+  mipmapLimitGroupName: 
+  pSDRemoveMatte: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

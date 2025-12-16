@@ -305,22 +305,29 @@ public class PuppetController : MonoBehaviour
 
         int itemIndex = -1; // -1 means no item
 
-        // Check if this person already has an assignment
-        if (personItemAssignments.ContainsKey(personId))
+        // Always assign a new random item when a new person ID is detected
+        if (Random.value <= itemSpawnChance)
         {
-            itemIndex = personItemAssignments[personId];
-        }
-        else
-        {
-            // New person - randomly assign item or no item
-            if (Random.value <= itemSpawnChance)
+            // Assign random item (different from previous if possible)
+            if (heldItemSettings.Length > 1)
             {
-                // Assign random item
-                itemIndex = Random.Range(0, heldItemSettings.Length);
+                // Try to get a different item than the current one
+                int newItemIndex;
+                do
+                {
+                    newItemIndex = Random.Range(0, heldItemSettings.Length);
+                } while (newItemIndex == currentItemIndex && heldItemSettings.Length > 1);
+                itemIndex = newItemIndex;
             }
-            // Store assignment for this person
-            personItemAssignments[personId] = itemIndex;
+            else
+            {
+                // Only one item available
+                itemIndex = 0;
+            }
         }
+        
+        // Update the assignment for this person
+        personItemAssignments[personId] = itemIndex;
 
         // Spawn item if assigned
         if (itemIndex >= 0 && itemIndex < heldItemSettings.Length)
