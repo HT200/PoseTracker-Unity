@@ -34,7 +34,9 @@ public class PuppetRootMover : MonoBehaviour
         {
             hasPerson = true;
 
-            float x = Mathf.Lerp(sceneMinX, sceneMaxX, person.center_x);
+            float cx = person.center_x;
+
+            float x = Mathf.Lerp(sceneMinX, sceneMaxX, cx);
             targetPos = new Vector3(x, transform.position.y, transform.position.z);
         }
         else
@@ -44,11 +46,5 @@ public class PuppetRootMover : MonoBehaviour
             float outX = (personIndex == 0) ? offscreenLeft : offscreenRight;
             targetPos = new Vector3(outX, transform.position.y, transform.position.z);
         }
-
-        transform.position = Vector3.Lerp(
-            transform.position,
-            targetPos,
-            Time.deltaTime * (hasPerson ? moveSmooth : disappearSpeed)
-        );
     }
 }

@@ -235,10 +235,6 @@ public class PuppetController : MonoBehaviour
             float worldX = (personCenterX * cameraFieldWidth) - (cameraFieldWidth * 0.5f);
             
             // Invert position for puppet index 1 (flipped puppet)
-            if (personIndex == 1)
-            {
-                worldX = -worldX;
-            }
             
             Vector2 targetPosition = new Vector2(worldX, 0f);
             Vector2 smoothPos = SmoothPosition(targetPosition);
