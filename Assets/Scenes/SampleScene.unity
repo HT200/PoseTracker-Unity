@@ -1288,7 +1288,7 @@ MonoBehaviour:
     bone: {fileID: 2090488518}
     bindZ: -15.656
     userBindZ: -80
-    minDelta: 0
+    minDelta: -100
     maxDelta: 100
   RightShoulder:
     bone: {fileID: 1886421593}
@@ -1300,7 +1300,7 @@ MonoBehaviour:
     bone: {fileID: 1601945588}
     bindZ: 13.176
     userBindZ: -80
-    minDelta: 0
+    minDelta: -100
     maxDelta: 100
   LeftThigh:
     bone: {fileID: 819660595}
@@ -1311,7 +1311,7 @@ MonoBehaviour:
   LeftLeg:
     bone: {fileID: 1051861719}
     bindZ: 2.41
-    userBindZ: 0
+    userBindZ: 2.5
     minDelta: 0
     maxDelta: 0
   RightThigh:
@@ -1323,7 +1323,7 @@ MonoBehaviour:
   RightLeg:
     bone: {fileID: 1431754748}
     bindZ: 3.832
-    userBindZ: 0
+    userBindZ: 2.5
     minDelta: 0
     maxDelta: 0
   heldItemSettings: []

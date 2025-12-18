@@ -81,7 +81,20 @@ public class PoseReceiver : MonoBehaviour
         }
 
         if (gotFrame)
+        {
             lastReceiveTime = Time.time;
+
+            // 🔥 LOG PERSON_ID
+            if (latestFrame.people != null)
+            {
+                for (int i = 0; i < latestFrame.people.Length; i++)
+                {
+                    Debug.Log(
+                        $"[PoseReceiver] index={i}, person_id={latestFrame.people[i].person_id}, center_x={latestFrame.people[i].center_x:F2}"
+                    );
+                }
+            }
+        }
     }
 
     void ReceiveLoop()
@@ -126,7 +139,19 @@ public class PoseReceiver : MonoBehaviour
         // Return the first available person
         return GetPerson(0);
     }
+    public PersonData GetPersonById(int personId)
+    {
+        if (latestFrame == null || latestFrame.people == null)
+            return null;
 
+        for (int i = 0; i < latestFrame.people.Length; i++)
+        {
+            if (latestFrame.people[i].person_id == personId)
+                return latestFrame.people[i];
+        }
+
+        return null;
+    }
     void OnDestroy()
     {
         running = false;

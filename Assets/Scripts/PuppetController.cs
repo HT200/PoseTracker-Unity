@@ -23,7 +23,7 @@ public class PuppetController : MonoBehaviour
 {
     [Header("Pose Input")]
     public PoseReceiver receiver;
-    public int personIndex = 0;
+    public int targetPersonId = 0;
 
     [Header("Rig Config")]
     public BoneConfig LowerBody;    // lock
@@ -198,8 +198,8 @@ public class PuppetController : MonoBehaviour
     {
         if (!receiver) return;
 
-        var person = receiver.GetPerson(personIndex);
-        
+        var person = receiver.GetPersonById(targetPersonId);
+
         // Hide puppet if no pose data available for this index
         if (person == null)
         {
@@ -244,7 +244,7 @@ public class PuppetController : MonoBehaviour
         }
 
         // Apply angle inversion for puppet index 1 (because scale is inverted)
-        float angleMultiplier = (personIndex == 1) ? -1f : 1f;
+        float angleMultiplier = (targetPersonId == 1) ? -1f : 1f;
 
         // Cache rotation values to avoid repeated dictionary lookups
         float torsoWorld = GetRotationZ(person, "torso");
@@ -285,9 +285,7 @@ public class PuppetController : MonoBehaviour
 
     int GetCurrentPersonId()
     {
-        // Get person_id from the current person data
-        var person = receiver.GetPerson(personIndex);
-        return person != null ? person.person_id : -1;
+        return targetPersonId;
     }
 
     void SpawnHeldItemForPerson(int personId)
