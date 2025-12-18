@@ -51,10 +51,6 @@ public class PuppetController : MonoBehaviour
     public float cameraFieldWidth = 10f;  // Reduced from 30f to bring puppets closer together
     [Range(0,1)] public float positionSmoothing = 0.01f;  // Reduced from 0.05f for faster response
     public float maxMovementSpeed = 15f; // Increased from 15f for faster movement (prevents teleporting)
-    
-    [Header("Y Axis Lock")]
-    public bool lockYAxis = false;  // Enable Y axis locking
-    public float bindYPosition = 0f;  // Y position to lock puppet to
 
     [Header("Smoothing")]
     // Removed baselineMap and calibration system to eliminate stuttering
@@ -66,10 +62,6 @@ public class PuppetController : MonoBehaviour
     private Dictionary<int, int> personItemAssignments = new Dictionary<int, int>(); // Maps person_id to item index (-1 = no item)
     private int currentItemIndex = -1; // Track which item index is currently held for runtime updates
     private Vector2 smoothedPosition = Vector2.zero; // For position tracking
-    
-    // Person change detection - track more than just person ID
-    private float lastPersonCenterX = -999f; // Track center position to detect person swaps
-    private float personSwapThreshold = 0.3f; // How much center position can change before we consider it a new person
     
     // Puppet visibility control
     private bool isPuppetVisible = true;
@@ -206,8 +198,8 @@ public class PuppetController : MonoBehaviour
     {
         if (!receiver) return;
 
-        var person = receiver.GetPerson(targetPersonId);
-        
+        var person = receiver.GetPersonById(targetPersonId);
+
         // Hide puppet if no pose data available for this index
         if (person == null)
         {
@@ -220,28 +212,15 @@ public class PuppetController : MonoBehaviour
 
         // Get actual person_id from receiver
         int currentPersonId = GetCurrentPersonId();
-        float currentCenterX = person.center_x;
-        
         if (currentPersonId != -1)
         {
-            // Check if this is a new person entering the frame
-            bool isNewPersonId = (currentPersonId != lastTrackedPersonId);
-            bool isPersonSwapped = (lastTrackedPersonId != -1 && 
-                                   Mathf.Abs(currentCenterX - lastPersonCenterX) > personSwapThreshold);
-            
-            // Spawn new item if it's a new person ID OR if someone swapped into the same ID slot
-            if (isNewPersonId || isPersonSwapped)
+            // Check if this is a new person ID entering the frame
+            if (currentPersonId != lastTrackedPersonId)
             {
                 // New person detected - spawn item based on stored assignment or create new
                 SpawnHeldItemForPerson(currentPersonId);
                 lastTrackedPersonId = currentPersonId;
-                
-                Debug.Log($"Person change detected: ID={currentPersonId}, CenterX={currentCenterX:F2}, " +
-                         $"NewID={isNewPersonId}, Swapped={isPersonSwapped}");
             }
-            
-            // Update tracking variables
-            lastPersonCenterX = currentCenterX;
         }
 
         // Removed calibration system - using direct pose data for better performance
@@ -255,15 +234,13 @@ public class PuppetController : MonoBehaviour
             // Map camera space (0-1) to world space
             float worldX = (personCenterX * cameraFieldWidth) - (cameraFieldWidth * 0.5f);
             
-            // Determine Y position based on lock setting
-            float targetY = lockYAxis ? bindYPosition : 0f;
+            // Invert position for puppet index 1 (flipped puppet)
             
-            Vector2 targetPosition = new Vector2(worldX, targetY);
+            Vector2 targetPosition = new Vector2(worldX, 0f);
             Vector2 smoothPos = SmoothPosition(targetPosition);
             
-            // Update puppet root position - respect Y axis lock setting
-            float finalY = lockYAxis ? bindYPosition : smoothPos.y;
-            transform.position = new Vector3(smoothPos.x, finalY, transform.position.z);
+            // Update puppet root position directly - removed clamping that caused stutters
+            transform.position = new Vector3(smoothPos.x, 0f, transform.position.z);
         }
 
         // Apply angle inversion for puppet index 1 (because scale is inverted)
