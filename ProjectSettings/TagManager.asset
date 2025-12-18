@@ -44,8 +44,11 @@ TagManager:
   - name: Default
     uniqueID: 0
     locked: 0
-  - name: Characters
+  - name: Character Left
     uniqueID: 657955485
+    locked: 0
+  - name: Character Right
+    uniqueID: 680220819
     locked: 0
   m_RenderingLayers:
   - Default

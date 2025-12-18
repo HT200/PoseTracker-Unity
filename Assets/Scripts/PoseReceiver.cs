@@ -21,7 +21,8 @@ public class PoseData
 [Serializable]
 public class PersonData
 {
-    public int person_id;
+    public int person_id;          // Actual person identity for tracking
+    public int puppet_index;       // Which puppet renders (0=right-facing, 1=left-facing)
     public float center_x;
     public BoneRotation[] rotations;
 }
@@ -121,10 +122,39 @@ public class PoseReceiver : MonoBehaviour
         return latestFrame.people[index];
     }
 
+    public PersonData GetPersonByPuppetIndex(int puppetIndex)
+    {
+        if (latestFrame == null || latestFrame.people == null)
+            return null;
+
+        // Find person data that should be rendered by the specified puppet index
+        foreach (PersonData person in latestFrame.people)
+        {
+            if (person.puppet_index == puppetIndex)
+                return person;
+        }
+
+        return null;
+    }
+
     public PersonData GetCurrentPersonData()
     {
         // Return the first available person
         return GetPerson(0);
+    }
+
+    public PersonData GetPersonById(int personId)
+    {
+        if (latestFrame == null || latestFrame.people == null)
+            return null;
+
+        for (int i = 0; i < latestFrame.people.Length; i++)
+        {
+            if (latestFrame.people[i].person_id == personId)
+                return latestFrame.people[i];
+        }
+
+        return null;
     }
 
     void OnDestroy()

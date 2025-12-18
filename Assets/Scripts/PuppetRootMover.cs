@@ -3,7 +3,7 @@ using UnityEngine;
 public class PuppetRootMover : MonoBehaviour
 {
     public PoseReceiver receiver;
-    public int personIndex = 0;
+    public int targetPersonId = 0;
 
     [Header("Tracking")]
     public float lostTimeout = 0.5f; // giây
@@ -28,7 +28,9 @@ public class PuppetRootMover : MonoBehaviour
 
         bool trackingAlive = (Time.time - receiver.lastReceiveTime) < lostTimeout;
 
-        var person = trackingAlive ? receiver.GetPerson(personIndex) : null;
+        var person = trackingAlive
+            ? receiver.GetPersonById(targetPersonId)
+            : null;
 
         if (person != null)
         {
@@ -43,7 +45,7 @@ public class PuppetRootMover : MonoBehaviour
         {
             hasPerson = false;
 
-            float outX = (personIndex == 0) ? offscreenLeft : offscreenRight;
+            float outX = (targetPersonId == 0) ? offscreenLeft : offscreenRight;
             targetPos = new Vector3(outX, transform.position.y, transform.position.z);
         }
     }
