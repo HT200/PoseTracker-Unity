@@ -994,64 +994,64 @@ MonoBehaviour:
   receiver: {fileID: 1395251129}
   targetPersonId: 0
   LowerBody:
-    bone: {fileID: 0}
-    bindZ: 0
-    userBindZ: 0
-    minDelta: 0
-    maxDelta: 0
+    bone: {fileID: 1825384095}
+    bindZ: 0.019
+    userBindZ: 90
+    minDelta: -60
+    maxDelta: 20
   Head:
-    bone: {fileID: 0}
-    bindZ: 0
+    bone: {fileID: 1793088689}
+    bindZ: 13.35
     userBindZ: 0
     minDelta: 0
     maxDelta: 0
   LeftShoulder:
-    bone: {fileID: 0}
-    bindZ: 0
-    userBindZ: 0
-    minDelta: 0
-    maxDelta: 0
+    bone: {fileID: 1818546121}
+    bindZ: -169.067
+    userBindZ: -80
+    minDelta: -180
+    maxDelta: 180
   LeftArm:
-    bone: {fileID: 0}
-    bindZ: 0
-    userBindZ: 0
+    bone: {fileID: 823715539}
+    bindZ: 27.36
+    userBindZ: -80
     minDelta: 0
-    maxDelta: 0
+    maxDelta: 100
   RightShoulder:
-    bone: {fileID: 0}
-    bindZ: 0
-    userBindZ: 0
-    minDelta: 0
-    maxDelta: 0
+    bone: {fileID: 1072943303}
+    bindZ: 162.323
+    userBindZ: -80
+    minDelta: -180
+    maxDelta: 180
   RightArm:
-    bone: {fileID: 0}
-    bindZ: 0
-    userBindZ: 0
+    bone: {fileID: 1235980632}
+    bindZ: -29.178
+    userBindZ: -80
     minDelta: 0
-    maxDelta: 0
+    maxDelta: 100
   LeftThigh:
-    bone: {fileID: 0}
-    bindZ: 0
-    userBindZ: 0
-    minDelta: 0
-    maxDelta: 0
+    bone: {fileID: 2077712122}
+    bindZ: -177.561
+    userBindZ: -90
+    minDelta: -30
+    maxDelta: 60
   LeftLeg:
-    bone: {fileID: 0}
-    bindZ: 0
-    userBindZ: 0
-    minDelta: 0
+    bone: {fileID: 1560025982}
+    bindZ: 0.09
+    userBindZ: -90
+    minDelta: -75
     maxDelta: 0
   RightThigh:
-    bone: {fileID: 0}
-    bindZ: 0
-    userBindZ: 0
-    minDelta: 0
-    maxDelta: 0
+    bone: {fileID: 2023007912}
+    bindZ: 169.616
+    userBindZ: -90
+    minDelta: -30
+    maxDelta: 60
   RightLeg:
-    bone: {fileID: 0}
-    bindZ: 0
-    userBindZ: 0
-    minDelta: 0
+    bone: {fileID: 1219294196}
+    bindZ: 0.09
+    userBindZ: -90
+    minDelta: -75
     maxDelta: 0
   heldItemSettings: []
   itemSpawnChance: 0.5
@@ -2394,11 +2394,11 @@ MonoBehaviour:
   receiver: {fileID: 1395251129}
   targetPersonId: 1
   LowerBody:
-    bone: {fileID: 0}
-    bindZ: 0
-    userBindZ: 0
-    minDelta: 0
-    maxDelta: 0
+    bone: {fileID: 960230959}
+    bindZ: 6.778
+    userBindZ: 90
+    minDelta: -60
+    maxDelta: 20
   Head:
     bone: {fileID: 0}
     bindZ: 0
@@ -2406,52 +2406,52 @@ MonoBehaviour:
     minDelta: 0
     maxDelta: 0
   LeftShoulder:
-    bone: {fileID: 0}
-    bindZ: 0
-    userBindZ: 0
-    minDelta: 0
-    maxDelta: 0
+    bone: {fileID: 885456111}
+    bindZ: -168.71
+    userBindZ: -80
+    minDelta: -180
+    maxDelta: 180
   LeftArm:
-    bone: {fileID: 0}
-    bindZ: 0
-    userBindZ: 0
+    bone: {fileID: 1426189683}
+    bindZ: 21.554
+    userBindZ: -80
     minDelta: 0
-    maxDelta: 0
+    maxDelta: 100
   RightShoulder:
-    bone: {fileID: 0}
-    bindZ: 0
-    userBindZ: 0
-    minDelta: 0
-    maxDelta: 0
+    bone: {fileID: 590751408}
+    bindZ: 163.651
+    userBindZ: -80
+    minDelta: -180
+    maxDelta: 180
   RightArm:
-    bone: {fileID: 0}
-    bindZ: 0
-    userBindZ: 0
+    bone: {fileID: 2030452353}
+    bindZ: -29.883
+    userBindZ: -80
     minDelta: 0
-    maxDelta: 0
+    maxDelta: 100
   LeftThigh:
-    bone: {fileID: 0}
-    bindZ: 0
-    userBindZ: 0
-    minDelta: 0
-    maxDelta: 0
+    bone: {fileID: 283651295}
+    bindZ: -169.848
+    userBindZ: -90
+    minDelta: -30
+    maxDelta: 60
   LeftLeg:
-    bone: {fileID: 0}
-    bindZ: 0
-    userBindZ: 0
-    minDelta: 0
+    bone: {fileID: 2108278522}
+    bindZ: -1.746
+    userBindZ: -90
+    minDelta: -75
     maxDelta: 0
   RightThigh:
-    bone: {fileID: 0}
-    bindZ: 0
-    userBindZ: 0
-    minDelta: 0
-    maxDelta: 0
+    bone: {fileID: 1707667447}
+    bindZ: -173.427
+    userBindZ: -90
+    minDelta: -30
+    maxDelta: 60
   RightLeg:
-    bone: {fileID: 0}
-    bindZ: 0
-    userBindZ: 0
-    minDelta: 0
+    bone: {fileID: 1966083250}
+    bindZ: -0.3
+    userBindZ: -90
+    minDelta: -75
     maxDelta: 0
   heldItemSettings: []
   itemSpawnChance: 0.5
