@@ -259,6 +259,7 @@ GameObject:
   m_Component:
   - component: {fileID: 382102422}
   - component: {fileID: 382102421}
+  - component: {fileID: 382102423}
   m_Layer: 0
   m_Name: BG2_0
   m_TagString: Untagged
@@ -339,6 +340,21 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &382102423
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 382102420}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e391cc23bc82cb3448d3274ae85ef333, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BackgroundConfigLoader
+  backgroundRenderer: {fileID: 382102421}
+  configFileName: config.txt
+  backgroundKey: background
 --- !u!1 &502559559
 GameObject:
   m_ObjectHideFlags: 0
@@ -761,7 +777,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PuppetRootMover
   receiver: {fileID: 0}
-  personIndex: 0
+  targetPersonId: 0
   lostTimeout: 0.5
   sceneMinX: -6
   sceneMaxX: 6
@@ -782,7 +798,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PuppetController
   receiver: {fileID: 0}
-  personIndex: 0
+  targetPersonId: 0
   LowerBody:
     bone: {fileID: 0}
     bindZ: 0
@@ -847,9 +863,10 @@ MonoBehaviour:
   itemSpawnChance: 0.5
   enablePositionTracking: 1
   cameraFieldWidth: 10
-  puppetYPosition: 0
   positionSmoothing: 0.01
   maxMovementSpeed: 15
+  lockYAxis: 0
+  bindYPosition: 0
   smoothing: 0.02
 --- !u!114 &681944838
 MonoBehaviour:
