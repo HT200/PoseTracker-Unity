@@ -1056,11 +1056,11 @@ MonoBehaviour:
   heldItemSettings: []
   itemSpawnChance: 0.5
   enablePositionTracking: 1
-  cameraFieldWidth: 10
+  cameraFieldWidth: 23
   positionSmoothing: 0.01
   maxMovementSpeed: 15
-  lockYAxis: 0
-  bindYPosition: 0
+  lockYAxis: 1
+  bindYPosition: -1.19
   smoothing: 0.02
 --- !u!114 &681944838
 MonoBehaviour:
@@ -2456,11 +2456,11 @@ MonoBehaviour:
   heldItemSettings: []
   itemSpawnChance: 0.5
   enablePositionTracking: 1
-  cameraFieldWidth: 10
+  cameraFieldWidth: 23
   positionSmoothing: 0.01
   maxMovementSpeed: 15
-  lockYAxis: 0
-  bindYPosition: 0
+  lockYAxis: 1
+  bindYPosition: 0.06
   smoothing: 0.02
 --- !u!1 &1939692872
 GameObject:
