@@ -51,6 +51,10 @@ public class PuppetController : MonoBehaviour
     public float cameraFieldWidth = 10f;  // Reduced from 30f to bring puppets closer together
     [Range(0,1)] public float positionSmoothing = 0.01f;  // Reduced from 0.05f for faster response
     public float maxMovementSpeed = 15f; // Increased from 15f for faster movement (prevents teleporting)
+    
+    [Header("Y-Axis Lock")]
+    public bool lockYAxis = false;  // Enable/disable Y-axis locking
+    public float bindYPosition = 0f;  // Fixed Y position when locked
 
     [Header("Smoothing")]
     // Removed baselineMap and calibration system to eliminate stuttering
@@ -70,6 +74,54 @@ public class PuppetController : MonoBehaviour
 
     // Calibration system removed to eliminate stuttering
     // Now using direct pose data for better performance
+    
+#if UNITY_EDITOR
+    void OnValidate()
+    {
+        // Auto-assign bindZ rotation when bone is dragged into inspector
+        AssignBindZRotations();
+        
+        // Auto-set bind Y position to current transform Y position when lock is enabled
+        if (lockYAxis && Application.isPlaying == false)
+        {
+            bindYPosition = transform.position.y;
+        }
+    }
+    
+    void AssignBindZRotations()
+    {
+        // Auto-assign bindZ for each bone config when bone is assigned
+        if (LowerBody.bone != null && LowerBody.bindZ == 0f)
+            LowerBody.bindZ = LowerBody.bone.eulerAngles.z;
+            
+        if (Head.bone != null && Head.bindZ == 0f)
+            Head.bindZ = Head.bone.eulerAngles.z;
+            
+        if (LeftShoulder.bone != null && LeftShoulder.bindZ == 0f)
+            LeftShoulder.bindZ = LeftShoulder.bone.eulerAngles.z;
+            
+        if (LeftArm.bone != null && LeftArm.bindZ == 0f)
+            LeftArm.bindZ = LeftArm.bone.eulerAngles.z;
+            
+        if (RightShoulder.bone != null && RightShoulder.bindZ == 0f)
+            RightShoulder.bindZ = RightShoulder.bone.eulerAngles.z;
+            
+        if (RightArm.bone != null && RightArm.bindZ == 0f)
+            RightArm.bindZ = RightArm.bone.eulerAngles.z;
+            
+        if (LeftThigh.bone != null && LeftThigh.bindZ == 0f)
+            LeftThigh.bindZ = LeftThigh.bone.eulerAngles.z;
+            
+        if (LeftLeg.bone != null && LeftLeg.bindZ == 0f)
+            LeftLeg.bindZ = LeftLeg.bone.eulerAngles.z;
+            
+        if (RightThigh.bone != null && RightThigh.bindZ == 0f)
+            RightThigh.bindZ = RightThigh.bone.eulerAngles.z;
+            
+        if (RightLeg.bone != null && RightLeg.bindZ == 0f)
+            RightLeg.bindZ = RightLeg.bone.eulerAngles.z;
+    }
+#endif
     
     void Start()
     {
@@ -239,8 +291,9 @@ public class PuppetController : MonoBehaviour
             Vector2 targetPosition = new Vector2(worldX, 0f);
             Vector2 smoothPos = SmoothPosition(targetPosition);
             
-            // Update puppet root position directly - removed clamping that caused stutters
-            transform.position = new Vector3(smoothPos.x, 0f, transform.position.z);
+            // Update puppet root position - apply Y-axis lock if enabled
+            float finalY = lockYAxis ? bindYPosition : 0f;
+            transform.position = new Vector3(smoothPos.x, finalY, transform.position.z);
         }
 
         // Apply angle inversion for puppet index 1 (because scale is inverted)
