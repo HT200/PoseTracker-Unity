@@ -7,395 +7,365 @@ public class HeldItemSettings
     public GameObject prefab;
     public Vector3 positionOffset = new Vector3(0.1f, 0.5f, 0f);
     public Vector3 rotationOffset = new Vector3(0f, 0f, 90f);
+    public Vector3 scaleOffset = new Vector3(1f, 1f, 1f);  // Scale multiplier for the held item
 }
 
+[System.Serializable]
+public class BoneConfig
+{
+    public Transform bone;
+    public float bindZ;     // góc khởi đầu của nhân vật
+    public float userBindZ; // góc khởi đầu của người dùng
+    public float minDelta;  // giới hạn dưới
+    public float maxDelta;  // giới hạn trên
+}
 public class PuppetController : MonoBehaviour
 {
     [Header("Pose Input")]
-    public PoseReceiver poseReceiver;
-    public int personIndex = 0;
+    public PoseReceiver receiver;
+    public int targetPersonId = 0;
 
-    [Header("Bones")]
-    public Transform Lower_body;
-    public Transform Upper_body;
-    public Transform Head;
+    [Header("Rig Config")]
+    public BoneConfig LowerBody;    // lock
 
-    public Transform Left_shoulder;
-    public Transform Left_arm;
-    public Transform Left_hand;
+    public BoneConfig Head;
 
-    public Transform Right_shoulder;
-    public Transform Right_arm;
-    public Transform Right_hand;
+    public BoneConfig LeftShoulder;
+    public BoneConfig LeftArm;
 
-    public Transform Left_thigh;
-    public Transform Left_leg;
-    public Transform Left_foot;
+    public BoneConfig RightShoulder;
+    public BoneConfig RightArm;
 
-    public Transform Right_thigh;
-    public Transform Right_leg;
-    public Transform Right_foot;
+    public BoneConfig LeftThigh;
+    public BoneConfig LeftLeg;
 
-    [Header("Bone Angle Offsets (set once per character)")]
-    public float torsoOffset = 90f;
-    public float headOffset = -90f;
-
-    public float leftShoulderOffset = 130f;
-    public float leftArmOffset = 180f;
-
-    public float rightShoulderOffset = -130f;
-    public float rightArmOffset = 180f;
-
-    public float leftThighOffset = 180f;
-    public float leftLegOffset = 0f;
-
-    public float rightThighOffset = 180f;
-    public float rightLegOffset = 0f;
-
-    [Header("Intensity")]
-    [Range(0,1)] public float torsoIntensity = 0.7f;
-    [Range(0,1)] public float headIntensity = 0.8f;
-    [Range(0,1)] public float armIntensity = 0.6f;
-    [Range(0,1)] public float legIntensity = 1.0f;
-
-    [Header("Motion Smoothing")]
-    [Range(0,1)] public float smoothing = 0.05f;
-
-    [Header("Rotation Limits (degrees)")]
-    public float torsoRotationLimit = 45f;
-    public float headRotationLimit = 60f;
-    public float shoulderRotationLimit = 120f;
-    public float armRotationLimit = 150f;
-    public float thighRotationLimit = 90f;
-    public float legRotationLimit = 120f;
-
-    [Header("Position Tracking")]
-    public bool enablePositionTracking = true;
-    public float cameraFieldWidth = 30f;  // Unity units width that camera field represents (wider than display)
-    public float cameraFieldHeight = 15f; // Unity units height that camera field represents
-    public Vector2 cameraFieldOffset = new Vector2(-15f, 0f); // Offset so camera edges are off-screen
-    [Range(0,1)] public float positionSmoothing = 0.05f;
-    public float maxMovementSpeed = 15f; // Maximum units per second the puppet can move (prevents teleporting)
+    public BoneConfig RightThigh;
+    public BoneConfig RightLeg;
 
     [Header("Held Items")]
     public HeldItemSettings[] heldItemSettings; // Array of items with individual offsets
     [Range(0f, 1f)] public float itemSpawnChance = 0.5f; // Probability of spawning an item (0 = never, 1 = always)
 
-    private bool calibrated = false;
-    private bool facingLeft = false; // Auto-detected
-    private Vector2 smoothedPosition = Vector2.zero;
+    [Header("Position Tracking")]
+    public bool enablePositionTracking = true;
+    public float cameraFieldWidth = 10f;  // Reduced from 30f to bring puppets closer together
+    [Range(0,1)] public float positionSmoothing = 0.01f;  // Reduced from 0.05f for faster response
+    public float maxMovementSpeed = 15f; // Increased from 15f for faster movement (prevents teleporting)
+    
+    [Header("Y-Axis Lock")]
+    public bool lockYAxis = false;  // Enable/disable Y-axis locking
+    public float bindYPosition = 0f;  // Fixed Y position when locked
+
+    [Header("Smoothing")]
+    // Removed baselineMap and calibration system to eliminate stuttering
+    [Range(0, 1)] public float smoothing = 0.02f;  // Reduced from 0.1f for faster bone response
+
+    // Held item tracking
     private int lastTrackedPersonId = -1; // Track which person ID we're currently following
     private GameObject currentHeldItem = null; // Currently held item instance
     private Dictionary<int, int> personItemAssignments = new Dictionary<int, int>(); // Maps person_id to item index (-1 = no item)
     private int currentItemIndex = -1; // Track which item index is currently held for runtime updates
-    private SpriteRenderer[] spriteRenderers; // Cache all sprite renderers for enable/disable
+    private Vector2 smoothedPosition = Vector2.zero; // For position tracking
+    
+    // Puppet visibility control
+    private bool isPuppetVisible = true;
+    private Renderer[] puppetRenderers; // Cache all renderers for performance
+    private Collider[] puppetColliders; // Cache all colliders for performance
 
-    // Neutral (user)
-    private float nTorso, nHead;
-    private float nLUArm, nLLArm;
-    private float nRUArm, nRLArm;
-    private float nLThigh, nLLeg;
-    private float nRThigh, nRLeg;
-
-    private Dictionary<string, float> smoothMap = new();
-
+    // Calibration system removed to eliminate stuttering
+    // Now using direct pose data for better performance
+    
+#if UNITY_EDITOR
+    void OnValidate()
+    {
+        // Auto-assign bindZ rotation when bone is dragged into inspector
+        AssignBindZRotations();
+        
+        // Auto-set bind Y position to current transform Y position when lock is enabled
+        if (lockYAxis && Application.isPlaying == false)
+        {
+            bindYPosition = transform.position.y;
+        }
+    }
+    
+    void AssignBindZRotations()
+    {
+        // Auto-assign bindZ for each bone config when bone is assigned
+        if (LowerBody.bone != null && LowerBody.bindZ == 0f)
+            LowerBody.bindZ = LowerBody.bone.eulerAngles.z;
+            
+        if (Head.bone != null && Head.bindZ == 0f)
+            Head.bindZ = Head.bone.eulerAngles.z;
+            
+        if (LeftShoulder.bone != null && LeftShoulder.bindZ == 0f)
+            LeftShoulder.bindZ = LeftShoulder.bone.eulerAngles.z;
+            
+        if (LeftArm.bone != null && LeftArm.bindZ == 0f)
+            LeftArm.bindZ = LeftArm.bone.eulerAngles.z;
+            
+        if (RightShoulder.bone != null && RightShoulder.bindZ == 0f)
+            RightShoulder.bindZ = RightShoulder.bone.eulerAngles.z;
+            
+        if (RightArm.bone != null && RightArm.bindZ == 0f)
+            RightArm.bindZ = RightArm.bone.eulerAngles.z;
+            
+        if (LeftThigh.bone != null && LeftThigh.bindZ == 0f)
+            LeftThigh.bindZ = LeftThigh.bone.eulerAngles.z;
+            
+        if (LeftLeg.bone != null && LeftLeg.bindZ == 0f)
+            LeftLeg.bindZ = LeftLeg.bone.eulerAngles.z;
+            
+        if (RightThigh.bone != null && RightThigh.bindZ == 0f)
+            RightThigh.bindZ = RightThigh.bone.eulerAngles.z;
+            
+        if (RightLeg.bone != null && RightLeg.bindZ == 0f)
+            RightLeg.bindZ = RightLeg.bone.eulerAngles.z;
+    }
+#endif
+    
     void Start()
     {
-        // Cache all sprite renderers for efficient enable/disable
-        spriteRenderers = GetComponentsInChildren<SpriteRenderer>();
+        // Cache all renderers and colliders in the puppet hierarchy for efficient visibility toggling
+        puppetRenderers = GetComponentsInChildren<Renderer>();
+        puppetColliders = GetComponentsInChildren<Collider>();
     }
+    
+    void SetPuppetVisibility(bool visible)
+    {
+        if (isPuppetVisible == visible) return; // Skip if already in correct state
+        
+        isPuppetVisible = visible;
+        
+        // Toggle all renderers
+        if (puppetRenderers != null)
+        {
+            for (int i = 0; i < puppetRenderers.Length; i++)
+            {
+                puppetRenderers[i].enabled = visible;
+            }
+        }
+        
+        // Toggle all colliders
+        if (puppetColliders != null)
+        {
+            for (int i = 0; i < puppetColliders.Length; i++)
+            {
+                puppetColliders[i].enabled = visible;
+            }
+        }
+        
+        // Hide held items when puppet is hidden
+        if (currentHeldItem != null)
+        {
+            currentHeldItem.SetActive(visible);
+        }
+    }
+
+    void ApplyBone(BoneConfig cfg, string key, float pythonZ, float angleMultiplier = 1f, float visibility = 1f)
+    {
+        if (!cfg.bone) return;
+
+        // Only apply rotation if visibility is above threshold (0.3)
+        if (visibility < 0.3f) return;
+
+        // delta dựa trên base người dùng nhập tay
+        float delta = Mathf.DeltaAngle(cfg.userBindZ, pythonZ);
+        // dùng DeltaAngle để tránh lỗi nhảy góc 179 -> -179
+
+        // Apply angle inversion for puppet index 1
+        delta *= angleMultiplier;
+
+        float clamped = Mathf.Clamp(delta, cfg.minDelta, cfg.maxDelta);
+
+        float finalZ = cfg.bindZ + clamped;
+
+        cfg.bone.localRotation = Quaternion.Euler(
+            0, 0,
+            Smooth(key, finalZ)
+        );
+    }
+
+    private Dictionary<string, float> smoothMap = new();
 
     float Smooth(string key, float target)
     {
         if (!smoothMap.ContainsKey(key))
             smoothMap[key] = target;
 
-        float s = Mathf.LerpAngle(smoothMap[key], target, 1f - smoothing);
-        smoothMap[key] = s;
-        return s;
+        // Use faster lerp with reduced smoothing for better responsiveness
+        float lerpFactor = 1f - smoothing;
+        smoothMap[key] = Mathf.LerpAngle(smoothMap[key], target, lerpFactor);
+        return smoothMap[key];
     }
 
     Vector2 SmoothPosition(Vector2 target)
     {
-        smoothedPosition = Vector2.Lerp(smoothedPosition, target, 1f - positionSmoothing);
+        // Use faster position smoothing for immediate response
+        float lerpFactor = 1f - positionSmoothing;
+        smoothedPosition = Vector2.Lerp(smoothedPosition, target, lerpFactor);
         return smoothedPosition;
     }
 
-    float Angle(Vector2 a, Vector2 b)
+    float GetRelativeRotation(string parent, string child, PersonData person)
     {
-        Vector2 d = (b - a).normalized;
-        return Mathf.Atan2(d.y, d.x) * Mathf.Rad2Deg;
+        float parentZ = GetRotationZ(person, parent);
+        float childZ = GetRotationZ(person, child);
+
+        // child relative to parent
+        return Mathf.DeltaAngle(parentZ, childZ);
     }
 
-    float CalculateElbowBend(Vector3 shoulder, Vector3 elbow, Vector3 wrist)
+    float GetRotationZ(PersonData person, string bone)
     {
-        // Calculate vectors
-        Vector3 upperArm = elbow - shoulder;
-        Vector3 forearm = wrist - elbow;
-        
-        // Calculate the angle between upper arm and forearm
-        // This gives us the actual elbow bend angle
-        float dotProduct = Vector3.Dot(upperArm.normalized, forearm.normalized);
-        float elbowBendAngle = Mathf.Acos(Mathf.Clamp(dotProduct, -1f, 1f)) * Mathf.Rad2Deg;
-        
-        // Convert to rotation angle (180 = straight, 0 = fully bent)
-        return 180f - elbowBendAngle;
+        if (person.rotations == null) return 0f;
+
+        // Optimized lookup - avoid creating objects in loop
+        for (int i = 0; i < person.rotations.Length; i++)
+        {
+            if (person.rotations[i].name == bone)
+                return person.rotations[i].z;
+        }
+
+        return 0f;
     }
 
-    float ArmAngleWithDepth(Vector3 shoulder, Vector3 elbow, Vector3 wrist, bool isLeftArm)
+    float GetBoneVisibility(PersonData person, string bone)
     {
-        // For side view puppets, we need to consider all dimensions for proper arm tracking
-        // Use X (horizontal), Y (vertical), and Z (depth) for complete 3D tracking
-        
-        Vector3 upperArm = elbow - shoulder;
-        
-        // For side-view puppets, primary rotation is around the Z axis (forward/back swing)
-        // But we also need to consider vertical component (Y)
-        // Project the arm direction onto the YZ plane for side view
-        // Use positive Z for natural forward direction
-        float shoulderAngle = Mathf.Atan2(upperArm.y, upperArm.z) * Mathf.Rad2Deg;
-        
-        return shoulderAngle;
+        if (person.rotations == null) return 0f;
+
+        for (int i = 0; i < person.rotations.Length; i++)
+        {
+            if (person.rotations[i].name == bone)
+                return person.rotations[i].visibility;
+        }
+
+        return 0f;
     }
 
-    float ForearmAngleWithDepth(Vector3 shoulder, Vector3 elbow, Vector3 wrist, bool isLeftArm)
+    void ApplyBoneRelative(BoneConfig cfg, string key, float relativeZ, float angleMultiplier = 1f, float visibility = 1f)
     {
-        // Calculate the forearm angle relative to the upper arm
-        // This creates natural elbow bending
-        
-        Vector3 upperArm = (elbow - shoulder).normalized;
-        Vector3 forearm = wrist - elbow;
-        
-        // Project forearm onto YZ plane for side view
-        // Use positive Z for natural forward direction
-        float forearmAngle = Mathf.Atan2(forearm.y, forearm.z) * Mathf.Rad2Deg;
-        
-        return forearmAngle;
+        if (!cfg.bone) return;
+
+        // Only apply rotation if visibility is above threshold (0.3)
+        if (visibility < 0.3f) return;
+
+        relativeZ = -relativeZ;
+
+        // Apply angle inversion for puppet index 1
+        relativeZ *= angleMultiplier;
+
+        // relativeZ đã là delta rồi → clamp trực tiếp
+        float clamped = Mathf.Clamp(relativeZ, cfg.minDelta, cfg.maxDelta);
+
+        float finalZ = cfg.bindZ + clamped;
+
+        cfg.bone.localRotation = Quaternion.Euler(
+            0, 0,
+            Smooth(key, finalZ)
+        );
     }
 
     void LateUpdate()
     {
-        if (!poseReceiver) return;
+        if (!receiver) return;
 
-        // Use personIndex to get specific person's pose
-        PoseReceiver.SimplePoseData pose = poseReceiver.GetPoseForPerson(personIndex);
-        if (pose == null || pose.landmarks == null)
-        {
-            // No pose detected - disable puppet
-            SetPuppetActive(false);
-            return;
-        }
+        var person = receiver.GetPersonById(targetPersonId);
 
-        // Pose detected - ensure puppet is visible
-        SetPuppetActive(true);
+        // Only hide puppet if no pose data at all - partial data is OK
+        bool hasAnyData = person != null && person.rotations != null && person.rotations.Length > 0;
+        SetPuppetVisibility(hasAnyData);
+        
+        if (!hasAnyData) return;
 
-        // Get actual person_id from PoseReceiver
+        // Get actual person_id from receiver
         int currentPersonId = GetCurrentPersonId();
-        if (currentPersonId == -1) return; // No valid person ID
-
-        // Check if this is a new person ID entering the frame
-        if (currentPersonId != lastTrackedPersonId)
+        if (currentPersonId != -1)
         {
-            // New person detected - spawn item based on stored assignment or create new
-            SpawnHeldItemForPerson(currentPersonId);
-            lastTrackedPersonId = currentPersonId;
+            // Check if this is a new person ID entering the frame
+            if (currentPersonId != lastTrackedPersonId)
+            {
+                // New person detected - spawn item based on stored assignment or create new
+                SpawnHeldItemForPerson(currentPersonId);
+                lastTrackedPersonId = currentPersonId;
+            }
         }
 
-        var lm = new Dictionary<string, Vector2>();
-        var lm3d = new Dictionary<string, Vector3>();
-        var visibility = new Dictionary<string, float>();
-        foreach (var p in pose.landmarks)
+        // Removed calibration system - using direct pose data for better performance
+        
+        // Update puppet position based on person's center_x
+        if (enablePositionTracking)
         {
-            lm[p.name] = new Vector2(p.position.x, p.position.y);
-            lm3d[p.name] = p.position; // Keep 3D for depth-aware calculations
-            visibility[p.name] = p.visibility;
-        }
-
-        if (!lm.ContainsKey("left_shoulder")) return;
-
-        // Check visibility for each limb (threshold of 0.5)
-        bool torsoVisible = visibility.GetValueOrDefault("left_hip", 0) > 0.5f && visibility.GetValueOrDefault("right_hip", 0) > 0.5f &&
-                            visibility.GetValueOrDefault("left_shoulder", 0) > 0.5f && visibility.GetValueOrDefault("right_shoulder", 0) > 0.5f;
-        bool headVisible = visibility.GetValueOrDefault("nose", 0) > 0.5f;
-        bool leftArmVisible = visibility.GetValueOrDefault("left_shoulder", 0) > 0.5f && visibility.GetValueOrDefault("left_elbow", 0) > 0.5f && visibility.GetValueOrDefault("left_wrist", 0) > 0.5f;
-        bool rightArmVisible = visibility.GetValueOrDefault("right_shoulder", 0) > 0.5f && visibility.GetValueOrDefault("right_elbow", 0) > 0.5f && visibility.GetValueOrDefault("right_wrist", 0) > 0.5f;
-        bool leftLegVisible = visibility.GetValueOrDefault("left_hip", 0) > 0.5f && visibility.GetValueOrDefault("left_knee", 0) > 0.5f && visibility.GetValueOrDefault("left_ankle", 0) > 0.5f;
-        bool rightLegVisible = visibility.GetValueOrDefault("right_hip", 0) > 0.5f && visibility.GetValueOrDefault("right_knee", 0) > 0.5f && visibility.GetValueOrDefault("right_ankle", 0) > 0.5f;
-
-        Vector2 hipC = (lm["left_hip"] + lm["right_hip"]) * 0.5f;
-        Vector2 shC  = (lm["left_shoulder"] + lm["right_shoulder"]) * 0.5f;
-
-        // Update puppet position based on lower body (hip center)
-        if (enablePositionTracking && torsoVisible)
-        {
-            // Use hip center for X position (lower body position)
-            Vector2 lowerBodyPosition = hipC;
+            // Use person's center_x for position
+            float personCenterX = person.center_x;
             
-            // Map camera space (0-1) to world space with offset
-            // Camera field extends beyond screen bounds so puppets can enter from sides
-            float worldX = (lowerBodyPosition.x * cameraFieldWidth) + cameraFieldOffset.x;
+            // Map camera space (0-1) to world space
+            float worldX = (personCenterX * cameraFieldWidth) - (cameraFieldWidth * 0.5f);
             
             // Invert position for puppet index 1 (flipped puppet)
-            if (personIndex == 1)
-            {
-                worldX = -worldX;
-            }
             
             Vector2 targetPosition = new Vector2(worldX, 0f);
             Vector2 smoothPos = SmoothPosition(targetPosition);
             
-            // Clamp movement speed to prevent teleporting
-            Vector3 currentPos = transform.position;
-            float maxDelta = maxMovementSpeed * Time.deltaTime;
-            float clampedX = Mathf.Clamp(smoothPos.x, currentPos.x - maxDelta, currentPos.x + maxDelta);
-            
-            // Update puppet root position (only X, Y stays at 0, preserve Z)
-            transform.position = new Vector3(clampedX, 0f, transform.position.z);
+            // Update puppet root position - apply Y-axis lock if enabled
+            float finalY = lockYAxis ? bindYPosition : 0f;
+            transform.position = new Vector3(smoothPos.x, finalY, transform.position.z);
         }
 
-        // Auto-detect facing direction based on shoulder depth (x position in camera space)
-        // Assuming mirrored camera view: if left shoulder has higher x, person is facing left
-        facingLeft = lm["left_shoulder"].x > lm["right_shoulder"].x;
+        // Apply angle inversion for puppet index 1 (because scale is inverted)
+        float angleMultiplier = (targetPersonId == 1) ? -1f : 1f;
 
-        float torsoA = Angle(hipC, shC);
+        // Cache rotation values to avoid repeated dictionary lookups
+        float torsoWorld = GetRotationZ(person, "torso");
+        float headRot = GetRotationZ(person, "head");
+        float lUpper = GetRotationZ(person, "left_upper_arm");
+        float lLower = GetRotationZ(person, "left_lower_arm");
+        float rUpper = GetRotationZ(person, "right_upper_arm");
+        float rLower = GetRotationZ(person, "right_lower_arm");
+        float leftThighRot = GetRotationZ(person, "left_thigh");
+        float leftLegRot = GetRotationZ(person, "left_leg");
+        float rightThighRot = GetRotationZ(person, "right_thigh");
+        float rightLegRot = GetRotationZ(person, "right_leg");
+
+        // Apply rotations using cached values with visibility checks
+        float torsoVisibility = GetBoneVisibility(person, "torso");
+        float torsoRel = Mathf.DeltaAngle(LowerBody.userBindZ, torsoWorld) * -2f;
+        ApplyBoneRelative(LowerBody, "torso", torsoRel, angleMultiplier, torsoVisibility);
+
+        float headVisibility = GetBoneVisibility(person, "head");
+        ApplyBone(Head, "head", headRot, angleMultiplier, headVisibility);
+
+        // Arms - check visibility for each bone
+        float lUpperVisibility = GetBoneVisibility(person, "left_upper_arm");
+        float lLowerVisibility = GetBoneVisibility(person, "left_lower_arm");
+        float rUpperVisibility = GetBoneVisibility(person, "right_upper_arm");
+        float rLowerVisibility = GetBoneVisibility(person, "right_lower_arm");
         
-        // Calculate head rotation based on forward/backward lean using depth (z)
-        float headA = torsoA; // Default fallback
-        if (lm.ContainsKey("nose") && lm3d.ContainsKey("nose"))
-        {
-            Vector3 nosePos = lm3d["nose"];
-            Vector3 shoulderCenter3d = (lm3d["left_shoulder"] + lm3d["right_shoulder"]) * 0.5f;
-            
-            // Calculate head lean using Y (vertical) and Z (depth/forward-backward)
-            Vector3 headVector = nosePos - shoulderCenter3d;
-            // For side-view, use depth (z) and vertical (y) to determine forward/backward lean
-            headA = Mathf.Atan2(headVector.y, headVector.z) * Mathf.Rad2Deg;
-        }
+        ApplyBone(LeftShoulder, "left_upper_arm", lUpper, angleMultiplier, lUpperVisibility);
+        float lLowerRel = -Mathf.DeltaAngle(lUpper, lLower);
+        ApplyBoneRelative(LeftArm, "left_lower_arm", lLowerRel, angleMultiplier, lLowerVisibility);
 
-        // Calculate arm angles using depth (z) for proper side-view tracking
-        // For sideways puppets, depth represents forward/backward arm movement
-        float lUp, lLo, rUp, rLo;
+        ApplyBone(RightShoulder, "right_upper_arm", rUpper, angleMultiplier, rUpperVisibility);
+        float rLowerRel = -Mathf.DeltaAngle(rUpper, rLower);
+        ApplyBoneRelative(RightArm, "right_lower_arm", rLowerRel, angleMultiplier, rLowerVisibility);
+
+        // Legs - check visibility for each bone
+        float leftThighVisibility = GetBoneVisibility(person, "left_thigh");
+        float leftLegVisibility = GetBoneVisibility(person, "left_leg");
+        float rightThighVisibility = GetBoneVisibility(person, "right_thigh");
+        float rightLegVisibility = GetBoneVisibility(person, "right_leg");
         
-        if (lm3d.ContainsKey("left_shoulder") && lm3d.ContainsKey("left_elbow") && lm3d.ContainsKey("left_wrist"))
-        {
-            // Left puppet arm tracks left body arm (direct mapping)
-            lUp = ArmAngleWithDepth(lm3d["left_shoulder"], lm3d["left_elbow"], lm3d["left_wrist"], true);
-            lLo = ForearmAngleWithDepth(lm3d["left_shoulder"], lm3d["left_elbow"], lm3d["left_wrist"], true);
-        }
-        else
-        {
-            // Fallback to 2D calculation
-            lUp = -Angle(lm["left_shoulder"], lm["left_elbow"]);
-            lLo = -Angle(lm["left_elbow"], lm["left_wrist"]);
-        }
-        
-        if (lm3d.ContainsKey("right_shoulder") && lm3d.ContainsKey("right_elbow") && lm3d.ContainsKey("right_wrist"))
-        {
-            // Right puppet arm tracks right body arm (direct mapping)
-            rUp = ArmAngleWithDepth(lm3d["right_shoulder"], lm3d["right_elbow"], lm3d["right_wrist"], false);
-            rLo = ForearmAngleWithDepth(lm3d["right_shoulder"], lm3d["right_elbow"], lm3d["right_wrist"], false);
-        }
-        else
-        {
-            // Fallback to 2D calculation
-            rUp = -Angle(lm["right_shoulder"], lm["right_elbow"]);
-            rLo = -Angle(lm["right_elbow"], lm["right_wrist"]);
-        }
+        ApplyBone(LeftThigh, "left_thigh", leftThighRot, angleMultiplier, leftThighVisibility);
+        ApplyBone(LeftLeg, "left_leg", leftLegRot, angleMultiplier, leftLegVisibility);
+        ApplyBone(RightThigh, "right_thigh", rightThighRot, angleMultiplier, rightThighVisibility);
+        ApplyBone(RightLeg, "right_leg", rightLegRot, angleMultiplier, rightLegVisibility);
 
-        float lTh = Angle(lm["left_hip"], lm["left_knee"]);
-        float lLg = Angle(lm["left_knee"], lm["left_ankle"]);
-
-        float rTh = Angle(lm["right_hip"], lm["right_knee"]);
-        float rLg = Angle(lm["right_knee"], lm["right_ankle"]);
-
-        // --- First frame: capture user neutral pose ---
-        if (!calibrated)
-        {
-            nTorso = torsoA;
-            nHead = headA;
-
-            nLUArm = lUp; nLLArm = lLo;
-            nRUArm = rUp; nRLArm = rLo;
-
-            nLThigh = lTh; nLLeg = lLg;
-            nRThigh = rTh; nRLeg = rLg;
-
-            calibrated = true;
-            Debug.Log("<color=cyan>[Puppet] Neutral pose captured ✓</color>");
-            return;
-        }
-
-        // --- Apply deltas with base offsets ---
-
-        // Invert deltas for puppet index 1 (flipped puppet)
-        float invertMultiplier = (personIndex == 1) ? -1f : 1f;
-
-        // Torso - return to neutral if not visible
-        float torsoAngle = torsoVisible 
-            ? Smooth("torso", torsoOffset + Mathf.Clamp((torsoA - nTorso) * torsoIntensity * invertMultiplier, -torsoRotationLimit, torsoRotationLimit))
-            : Smooth("torso", torsoOffset);
-        Upper_body.localRotation = Quaternion.Euler(0, 0, torsoAngle - 90f);
-        Lower_body.localRotation = Quaternion.Euler(0, 0, torsoAngle);
-
-        // Head - return to neutral if not visible
-        float headAngle = headVisible
-            ? Smooth("head", headOffset + Mathf.Clamp((headA - nHead) * headIntensity * invertMultiplier, -headRotationLimit, headRotationLimit))
-            : Smooth("head", headOffset);
-        Head.localRotation = Quaternion.Euler(0, 0, headAngle);
-
-        // LEFT ARM - return to neutral if not visible
-        float lShldr = leftArmVisible
-            ? Smooth("lSh", leftShoulderOffset + Mathf.Clamp((lUp - nLUArm) * armIntensity * invertMultiplier, -shoulderRotationLimit, shoulderRotationLimit))
-            : Smooth("lSh", leftShoulderOffset);
-        float lArm = leftArmVisible
-            ? Smooth("lArm", leftArmOffset + Mathf.Clamp((lLo - nLLArm) * armIntensity * invertMultiplier, -armRotationLimit, armRotationLimit))
-            : Smooth("lArm", leftArmOffset);
-
-        Left_shoulder.localRotation = Quaternion.Euler(0, 0, lShldr);
-        Left_arm.localRotation      = Quaternion.Euler(0, 0, lArm);
-
-        // RIGHT ARM - return to neutral if not visible
-        float rShldr = rightArmVisible
-            ? Smooth("rSh", rightShoulderOffset + Mathf.Clamp((rUp - nRUArm) * armIntensity * invertMultiplier, -shoulderRotationLimit, shoulderRotationLimit))
-            : Smooth("rSh", rightShoulderOffset);
-        float rArm = rightArmVisible
-            ? Smooth("rArm", rightArmOffset + Mathf.Clamp((rLo - nRLArm) * armIntensity * invertMultiplier, -armRotationLimit, armRotationLimit))
-            : Smooth("rArm", rightArmOffset);
-
-        Right_shoulder.localRotation = Quaternion.Euler(0, 0, rShldr);
-        Right_arm.localRotation      = Quaternion.Euler(0, 0, rArm);
-
-        // LEFT LEG - return to neutral if not visible
-        float lThigh = leftLegVisible
-            ? Smooth("lTh", leftThighOffset + Mathf.Clamp((lTh - nLThigh) * legIntensity * invertMultiplier, -thighRotationLimit, thighRotationLimit))
-            : Smooth("lTh", leftThighOffset);
-        float lLeg = leftLegVisible
-            ? Smooth("lLg", leftLegOffset + Mathf.Clamp((lLg - nLLeg) * legIntensity * invertMultiplier, -legRotationLimit, legRotationLimit))
-            : Smooth("lLg", leftLegOffset);
-
-        Left_thigh.localRotation = Quaternion.Euler(0, 0, lThigh);
-        Left_leg.localRotation   = Quaternion.Euler(0, 0, lLeg);
-
-        // RIGHT LEG - return to neutral if not visible
-        float rThigh = rightLegVisible
-            ? Smooth("rTh", rightThighOffset + Mathf.Clamp((rTh - nRThigh) * legIntensity * invertMultiplier, -thighRotationLimit, thighRotationLimit))
-            : Smooth("rTh", rightThighOffset);
-        float rLeg = rightLegVisible
-            ? Smooth("rLg", rightLegOffset + Mathf.Clamp((rLg - nRLeg) * legIntensity * invertMultiplier, -legRotationLimit, legRotationLimit))
-            : Smooth("rLg", rightLegOffset);
-
-        Right_thigh.localRotation = Quaternion.Euler(0, 0, rThigh);
-        Right_leg.localRotation   = Quaternion.Euler(0, 0, rLeg);
-
-        // Update held item position to follow right hand
+        // Update held item position
         UpdateHeldItemPosition();
     }
 
     int GetCurrentPersonId()
     {
-        // Get person_id from the current person data
-        var personData = poseReceiver.GetCurrentPersonData();
-        return personData != null ? personData.person_id : -1;
+        return targetPersonId;
     }
 
     void SpawnHeldItemForPerson(int personId)
@@ -413,71 +383,62 @@ public class PuppetController : MonoBehaviour
 
         int itemIndex = -1; // -1 means no item
 
-        // Check if this person already has an assignment
-        if (personItemAssignments.ContainsKey(personId))
+        // Always assign a new random item when a new person ID is detected
+        if (Random.value <= itemSpawnChance)
         {
-            itemIndex = personItemAssignments[personId];
-        }
-        else
-        {
-            // New person - randomly assign item or no item
-            if (Random.value <= itemSpawnChance)
+            // Assign random item (different from previous if possible)
+            if (heldItemSettings.Length > 1)
             {
-                // Assign random item
-                itemIndex = Random.Range(0, heldItemSettings.Length);
+                // Try to get a different item than the current one
+                int newItemIndex;
+                do
+                {
+                    newItemIndex = Random.Range(0, heldItemSettings.Length);
+                } while (newItemIndex == currentItemIndex && heldItemSettings.Length > 1);
+                itemIndex = newItemIndex;
             }
-            // Store assignment for this person
-            personItemAssignments[personId] = itemIndex;
+            else
+            {
+                // Only one item available
+                itemIndex = 0;
+            }
         }
+        
+        // Update the assignment for this person
+        personItemAssignments[personId] = itemIndex;
 
         // Spawn item if assigned
         if (itemIndex >= 0 && itemIndex < heldItemSettings.Length)
         {
             HeldItemSettings itemSetting = heldItemSettings[itemIndex];
-            if (itemSetting.prefab != null && Right_hand != null)
+            if (itemSetting.prefab != null && RightArm.bone != null)
             {
-                // Instantiate item and attach to right hand
-                currentHeldItem = Instantiate(itemSetting.prefab, Right_hand);
+                // Instantiate item and attach to right hand (using RightArm bone as hand)
+                currentHeldItem = Instantiate(itemSetting.prefab, RightArm.bone);
                 currentHeldItem.transform.localPosition = itemSetting.positionOffset;
                 currentHeldItem.transform.localRotation = Quaternion.Euler(itemSetting.rotationOffset);
+                currentHeldItem.transform.localScale = itemSetting.scaleOffset;  // Apply scale offset
                 currentItemIndex = itemIndex; // Store for runtime updates
 
-                Debug.Log($"<color=yellow>[Puppet] Person {personId} holding: {itemSetting.prefab.name}</color>");
+                // Debug.Log($"<color=yellow>[Puppet] Person {personId} holding: {itemSetting.prefab.name}</color>");  // Commented out for performance
             }
         }
         else
         {
             currentItemIndex = -1; // No item
-            Debug.Log($"<color=yellow>[Puppet] Person {personId} has no item</color>");
+            // Debug.Log($"<color=yellow>[Puppet] Person {personId} has no item</color>");  // Commented out for performance
         }
     }
 
     void UpdateHeldItemPosition()
     {
         // Apply runtime offset adjustments from inspector
-        if (currentHeldItem != null && Right_hand != null && currentItemIndex >= 0 && currentItemIndex < heldItemSettings.Length)
+        if (currentHeldItem != null && RightArm.bone != null && currentItemIndex >= 0 && currentItemIndex < heldItemSettings.Length)
         {
             HeldItemSettings itemSetting = heldItemSettings[currentItemIndex];
             currentHeldItem.transform.localPosition = itemSetting.positionOffset;
             currentHeldItem.transform.localRotation = Quaternion.Euler(itemSetting.rotationOffset);
-        }
-    }
-
-    void SetPuppetActive(bool active)
-    {
-        // Enable/disable all sprite renderers
-        if (spriteRenderers != null)
-        {
-            foreach (var sr in spriteRenderers)
-            {
-                if (sr != null) sr.enabled = active;
-            }
-        }
-
-        // Enable/disable held item
-        if (currentHeldItem != null)
-        {
-            currentHeldItem.SetActive(active);
+            currentHeldItem.transform.localScale = itemSetting.scaleOffset;  // Apply scale offset
         }
     }
 }
