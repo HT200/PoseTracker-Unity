@@ -161,9 +161,12 @@ public class PuppetController : MonoBehaviour
         }
     }
 
-    void ApplyBone(BoneConfig cfg, string key, float pythonZ, float angleMultiplier = 1f)
+    void ApplyBone(BoneConfig cfg, string key, float pythonZ, float angleMultiplier = 1f, float visibility = 1f)
     {
         if (!cfg.bone) return;
+
+        // Only apply rotation if visibility is above threshold (0.3)
+        if (visibility < 0.3f) return;
 
         // delta dựa trên base người dùng nhập tay
         float delta = Mathf.DeltaAngle(cfg.userBindZ, pythonZ);
@@ -226,9 +229,25 @@ public class PuppetController : MonoBehaviour
         return 0f;
     }
 
-    void ApplyBoneRelative(BoneConfig cfg, string key, float relativeZ, float angleMultiplier = 1f)
+    float GetBoneVisibility(PersonData person, string bone)
+    {
+        if (person.rotations == null) return 0f;
+
+        for (int i = 0; i < person.rotations.Length; i++)
+        {
+            if (person.rotations[i].name == bone)
+                return person.rotations[i].visibility;
+        }
+
+        return 0f;
+    }
+
+    void ApplyBoneRelative(BoneConfig cfg, string key, float relativeZ, float angleMultiplier = 1f, float visibility = 1f)
     {
         if (!cfg.bone) return;
+
+        // Only apply rotation if visibility is above threshold (0.3)
+        if (visibility < 0.3f) return;
 
         relativeZ = -relativeZ;
 
@@ -252,15 +271,11 @@ public class PuppetController : MonoBehaviour
 
         var person = receiver.GetPersonById(targetPersonId);
 
-        // Hide puppet if no pose data available for this index
-        if (person == null)
-        {
-            SetPuppetVisibility(false);
-            return;
-        }
+        // Only hide puppet if no pose data at all - partial data is OK
+        bool hasAnyData = person != null && person.rotations != null && person.rotations.Length > 0;
+        SetPuppetVisibility(hasAnyData);
         
-        // Show puppet if pose data is available
-        SetPuppetVisibility(true);
+        if (!hasAnyData) return;
 
         // Get actual person_id from receiver
         int currentPersonId = GetCurrentPersonId();
@@ -311,26 +326,38 @@ public class PuppetController : MonoBehaviour
         float rightThighRot = GetRotationZ(person, "right_thigh");
         float rightLegRot = GetRotationZ(person, "right_leg");
 
-        // Apply rotations using cached values
+        // Apply rotations using cached values with visibility checks
+        float torsoVisibility = GetBoneVisibility(person, "torso");
         float torsoRel = Mathf.DeltaAngle(LowerBody.userBindZ, torsoWorld) * -2f;
-        ApplyBoneRelative(LowerBody, "torso", torsoRel, angleMultiplier);
+        ApplyBoneRelative(LowerBody, "torso", torsoRel, angleMultiplier, torsoVisibility);
 
-        ApplyBone(Head, "head", headRot, angleMultiplier);
+        float headVisibility = GetBoneVisibility(person, "head");
+        ApplyBone(Head, "head", headRot, angleMultiplier, headVisibility);
 
-        // Arms
-        ApplyBone(LeftShoulder, "left_upper_arm", lUpper, angleMultiplier);
+        // Arms - check visibility for each bone
+        float lUpperVisibility = GetBoneVisibility(person, "left_upper_arm");
+        float lLowerVisibility = GetBoneVisibility(person, "left_lower_arm");
+        float rUpperVisibility = GetBoneVisibility(person, "right_upper_arm");
+        float rLowerVisibility = GetBoneVisibility(person, "right_lower_arm");
+        
+        ApplyBone(LeftShoulder, "left_upper_arm", lUpper, angleMultiplier, lUpperVisibility);
         float lLowerRel = -Mathf.DeltaAngle(lUpper, lLower);
-        ApplyBoneRelative(LeftArm, "left_lower_arm", lLowerRel, angleMultiplier);
+        ApplyBoneRelative(LeftArm, "left_lower_arm", lLowerRel, angleMultiplier, lLowerVisibility);
 
-        ApplyBone(RightShoulder, "right_upper_arm", rUpper, angleMultiplier);
+        ApplyBone(RightShoulder, "right_upper_arm", rUpper, angleMultiplier, rUpperVisibility);
         float rLowerRel = -Mathf.DeltaAngle(rUpper, rLower);
-        ApplyBoneRelative(RightArm, "right_lower_arm", rLowerRel, angleMultiplier);
+        ApplyBoneRelative(RightArm, "right_lower_arm", rLowerRel, angleMultiplier, rLowerVisibility);
 
-        // Legs
-        ApplyBone(LeftThigh, "left_thigh", leftThighRot, angleMultiplier);
-        ApplyBone(LeftLeg, "left_leg", leftLegRot, angleMultiplier);
-        ApplyBone(RightThigh, "right_thigh", rightThighRot, angleMultiplier);
-        ApplyBone(RightLeg, "right_leg", rightLegRot, angleMultiplier);
+        // Legs - check visibility for each bone
+        float leftThighVisibility = GetBoneVisibility(person, "left_thigh");
+        float leftLegVisibility = GetBoneVisibility(person, "left_leg");
+        float rightThighVisibility = GetBoneVisibility(person, "right_thigh");
+        float rightLegVisibility = GetBoneVisibility(person, "right_leg");
+        
+        ApplyBone(LeftThigh, "left_thigh", leftThighRot, angleMultiplier, leftThighVisibility);
+        ApplyBone(LeftLeg, "left_leg", leftLegRot, angleMultiplier, leftLegVisibility);
+        ApplyBone(RightThigh, "right_thigh", rightThighRot, angleMultiplier, rightThighVisibility);
+        ApplyBone(RightLeg, "right_leg", rightLegRot, angleMultiplier, rightLegVisibility);
 
         // Update held item position
         UpdateHeldItemPosition();

@@ -31,6 +31,7 @@ public class BoneRotation
 {
     public string name;
     public float z;
+    public float visibility = 1f; // 0-1 confidence/visibility level
 }
 
 
