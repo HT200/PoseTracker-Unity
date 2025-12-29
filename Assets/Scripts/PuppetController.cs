@@ -59,6 +59,9 @@ public class PuppetController : MonoBehaviour
     [Header("Smoothing")]
     // Removed baselineMap and calibration system to eliminate stuttering
     [Range(0, 1)] public float smoothing = 0.02f;  // Reduced from 0.1f for faster bone response
+    
+    [Header("Visibility Timeout")]
+    public float poseTimeoutSeconds = 2f; // Hide puppet after this many seconds without pose data
 
     // Held item tracking
     private int lastTrackedPersonId = -1; // Track which person ID we're currently following
@@ -71,6 +74,7 @@ public class PuppetController : MonoBehaviour
     private bool isPuppetVisible = true;
     private Renderer[] puppetRenderers; // Cache all renderers for performance
     private Collider[] puppetColliders; // Cache all colliders for performance
+    private float lastPoseTime = 0f; // Track when we last received valid pose data
 
     // Calibration system removed to eliminate stuttering
     // Now using direct pose data for better performance
@@ -128,6 +132,9 @@ public class PuppetController : MonoBehaviour
         // Cache all renderers and colliders in the puppet hierarchy for efficient visibility toggling
         puppetRenderers = GetComponentsInChildren<Renderer>();
         puppetColliders = GetComponentsInChildren<Collider>();
+        
+        // Initialize last pose time to current time to avoid immediate timeout
+        lastPoseTime = Time.time;
     }
     
     void SetPuppetVisibility(bool visible)
@@ -269,13 +276,66 @@ public class PuppetController : MonoBehaviour
     {
         if (!receiver) return;
 
+        // Check if ANY valid poses exist across all person IDs (global pose detection)
+        bool anyValidPoseExists = false;
+        for (int personId = 0; personId < 2; personId++) // Check both person 0 and 1
+        {
+            var anyPerson = receiver.GetPersonById(personId);
+            if (anyPerson != null && anyPerson.rotations != null && anyPerson.rotations.Length > 0)
+            {
+                // Check if this person has visible landmarks
+                int visibleLandmarks = 0;
+                for (int i = 0; i < anyPerson.rotations.Length; i++)
+                {
+                    if (anyPerson.rotations[i].visibility > 0.1f)
+                    {
+                        visibleLandmarks++;
+                    }
+                }
+                
+                if (visibleLandmarks >= 3)
+                {
+                    anyValidPoseExists = true;
+                    break; // Found at least one valid pose
+                }
+            }
+        }
+
         var person = receiver.GetPersonById(targetPersonId);
 
-        // Only hide puppet if no pose data at all - partial data is OK
-        bool hasAnyData = person != null && person.rotations != null && person.rotations.Length > 0;
-        SetPuppetVisibility(hasAnyData);
+        // Enhanced check for valid pose data for this specific puppet
+        bool hasAnyData = false;
+        if (person != null && person.rotations != null && person.rotations.Length > 0)
+        {
+            // Check if we actually have visible landmarks (not just empty rotation data)
+            int visibleLandmarks = 0;
+            for (int i = 0; i < person.rotations.Length; i++)
+            {
+                if (person.rotations[i].visibility > 0.1f) // Check for any visibility above minimal threshold
+                {
+                    visibleLandmarks++;
+                }
+            }
+            
+            // Consider data valid only if we have at least 3 visible landmarks
+            hasAnyData = visibleLandmarks >= 3;
+        }
         
-        if (!hasAnyData) return;
+        // Update last pose time if ANY valid pose exists (global timeout)
+        if (anyValidPoseExists)
+        {
+            lastPoseTime = Time.time;
+        }
+        
+        // Check if pose data is too old (global timeout - no poses anywhere)
+        bool globalPoseTimedOut = (Time.time - lastPoseTime) > poseTimeoutSeconds;
+        
+        // Hide puppet if global timeout OR no data for this specific puppet
+        bool shouldShowPuppet = hasAnyData && !globalPoseTimedOut;
+        
+        SetPuppetVisibility(shouldShowPuppet);
+        
+        if (!shouldShowPuppet) return;
 
         // Get actual person_id from receiver
         int currentPersonId = GetCurrentPersonId();

@@ -41,6 +41,9 @@ public class PoseReceiver : MonoBehaviour
 {
     [Header("Network")]
     public int port = 12345;
+    
+    [Header("Timeout")]
+    public float udpTimeoutSeconds = 1f; // Clear pose data after this many seconds without UDP packets
 
     private UdpClient udp;
     private Thread receiveThread;
@@ -95,6 +98,13 @@ public class PoseReceiver : MonoBehaviour
                     );
                 }
             }
+        }
+        
+        // Check for UDP timeout - clear pose data if no packets received for too long
+        if (latestFrame != null && (Time.time - lastReceiveTime) > udpTimeoutSeconds)
+        {
+            Debug.Log($"[PoseReceiver] UDP timeout after {udpTimeoutSeconds}s - clearing pose data");
+            latestFrame = null; // Clear pose data to hide puppets
         }
     }
 
